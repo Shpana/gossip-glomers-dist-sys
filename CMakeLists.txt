@@ -21,3 +21,4 @@ FetchContent_MakeAvailable(json)
 add_subdirectory(core)
 
 add_subdirectory(echo)
+add_subdirectory(unique_ids)
