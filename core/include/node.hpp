@@ -8,30 +8,34 @@
 #include "transport.hpp"
 
 namespace ds::core {
-  struct Context {
-    const std::string& node_id;
-    const std::vector<std::string>& available_node_ids;
+  struct Environment {
+    std::string node_id;
+    std::vector<std::string> available_node_ids;
   };
 
   class IHandler {
   public:
     virtual ~IHandler() = default;
 
-    [[nodiscard]] virtual std::string_view name() const = 0;
-    virtual Response handle(Context&& context, Request&& request) = 0;
+    [[nodiscard]] virtual std::string_view type() const = 0;
+
+    virtual Response handle(Request&& request) = 0;
+
+    virtual void start(Environment env) {}
+    virtual void stop() {}
   };
 
   class Node {
-    struct Environment {
-      std::string node_id;
-      std::vector<std::string> available_node_ids;
-    };
-
   public:
     Node();
 
     void run();
-    void registerHandler(std::unique_ptr<IHandler> handler);
+
+    template<typename Handler>
+    void add() {
+      auto handler = std::make_unique<Handler>();
+      handlers_[std::string{handler->type()}] = std::move(handler);
+    }
 
   private:
     void handle(Request&& request);
@@ -39,8 +43,10 @@ namespace ds::core {
 
   private:
     std::unique_ptr<Transport> transport_;
-    std::optional<Environment> environment_{std::nullopt};
+    std::optional<Environment> env_{std::nullopt};
 
     std::unordered_map<std::string, std::unique_ptr<IHandler>> handlers_{};
+
+    bool was_started_{false};
   };
 }// namespace ds::core

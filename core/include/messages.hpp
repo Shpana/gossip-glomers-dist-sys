@@ -24,7 +24,8 @@ namespace ds::core {
 
     [[nodiscard]] Response reply(std::string type, nlohmann::json body) const;
     [[nodiscard]] Response reply(std::string type) const;
-    [[nodiscard]] Response reply(std::string_view type, nlohmann::json body) const;
+    [[nodiscard]] Response reply(std::string_view type,
+                                 nlohmann::json body) const;
     [[nodiscard]] Response reply(std::string_view type) const;
   };
 }// namespace ds::core

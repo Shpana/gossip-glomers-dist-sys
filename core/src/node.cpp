@@ -10,8 +10,7 @@ namespace ds::core {
   constexpr std::string_view kInitType = "init";
   constexpr std::string_view kInitOkType = "init_ok";
 
-  Node::Node() : transport_{std::make_unique<Transport>()} {
-  }
+  Node::Node() : transport_{std::make_unique<Transport>()} {}
 
   void Node::run() {
     while (transport_->isRunning()) {
@@ -21,11 +20,10 @@ namespace ds::core {
       }
       handle(std::move(request.value()));
     }
-  }
 
-  void Node::registerHandler(std::unique_ptr<IHandler> handler) {
-    auto name = handler->name();
-    handlers_[std::string{name}] = std::move(handler);
+    for (auto& [type, handler]: handlers_) {
+      handler->stop();
+    }
   }
 
   void Node::handle(Request&& request) {
@@ -36,25 +34,19 @@ namespace ds::core {
     }
 
     if (auto it = handlers_.find(type); it != handlers_.end()) {
-      if (!environment_.has_value()) {
-        std::cerr << "Node was not configured!\n";
+      if (!was_started_) {
+        std::cerr << "There is request to not initializated node!\n";
         return;
       }
 
-      // TODO(shpana): add better task execution 
-      auto f = std::async(
-          std::launch::async,
-          [this, &it, request = std::move(request)]() mutable {
-            auto context =
-                Context{.node_id = environment_->node_id,
-                        .available_node_ids = environment_->available_node_ids};
+      // TODO(shpana): add better task execution
+      auto f = std::async(std::launch::async,
+                          [this, &it, request = std::move(request)]() mutable {
+                            auto& handler = it->second;
+                            auto response = handler->handle(std::move(request));
 
-            auto& handler = it->second;
-            auto response =
-                handler->handle(std::move(context), std::move(request));
-
-            transport_->send(std::move(response));
-          });
+                            transport_->send(std::move(response));
+                          });
       return;
     }
 
@@ -67,9 +59,15 @@ namespace ds::core {
     auto node_id = body["node_id"].get<std::string>();
     auto available_node_ids = body["node_ids"].get<std::vector<std::string>>();
 
-    environment_.emplace(
+    env_.emplace(
         Environment{.node_id = std::move(node_id),
                     .available_node_ids = std::move(available_node_ids)});
+
+    for (auto& [type, handler]: handlers_) {
+      handler->start(env_.value());
+    }
+
+    std::exchange(was_started_, true);
 
     transport_->send(request.reply(kInitOkType));
   }
