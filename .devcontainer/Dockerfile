@@ -1,45 +1,26 @@
 FROM ubuntu:latest AS workspace
 
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
+    wget \
+    curl \
+    zip \
+    unzip \
     git \
     git-lfs \
-    make \
     cmake \
+    build-essential \
+    python3 \
+    python3-pip \
+    python3-venv \
     clang-format \
     clang-tidy
 
-# Installing folly
-RUN apt-get update && apt-get install -y \
-    libgoogle-glog-dev \
-    libgflags-dev \
-    libboost-all-dev \
-    libdouble-conversion-dev \
-    libssl-dev \
-    libevent-dev \
-    libiberty-dev \
-    libfmt-dev \
-    liblz4-dev \
-    liblzma-dev \
-    libsnappy-dev \
-    libzstd-dev \
-    zlib1g-dev \
-    libunwind-dev \
-    libdwarf-dev \
-    libfast-float-dev \
-    libsodium-dev
+# Install maelstrom
+RUN apt update && apt install -y \
+    openjdk-17-jdk \
+    graphviz \
+    gnuplot
 
-RUN git clone https://github.com/axboe/liburing.git /usr/lib/uring
-RUN cd /usr/lib/uring && \
-    ./configure --cc=/usr/bin/gcc --cxx=/usr/bin/g++ && \
-    make && make install 
-
-RUN git clone https://github.com/facebook/folly /usr/lib/folly
-RUN cd /usr/lib/folly/build && \
-    cmake \
-        -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
-        -DCMAKE_C_COMPILER=/usr/bin/gcc \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_CXX_STANDARD=20 \
-        -DCMAKE_CXX_STANDARD_REQUIRED=ON \
-        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON .. && \
-    make all && make install
+RUN wget -P /tmp https://github.com/jepsen-io/maelstrom/releases/download/v0.2.4/maelstrom.tar.bz2 && \
+    tar xvjf /tmp/maelstrom.tar.bz2 -C /opt/ && \
+    ln -s /opt/maelstrom/maelstrom /usr/bin/maelstrom
