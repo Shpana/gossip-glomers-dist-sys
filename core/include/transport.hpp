@@ -46,7 +46,7 @@ namespace ds::core {
       return is_running_;
     }
 
-  private: 
+  private:
     bool is_running_{true};
   };
 }// namespace ds::core

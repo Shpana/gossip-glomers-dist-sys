@@ -3,6 +3,6 @@
 
 int main() {
   ds::core::Node node;
-  node.registerHandler(std::make_unique<ds::echo::EchoHandler>());
+  node.add<ds::echo::EchoHandler>();
   node.run();
 }

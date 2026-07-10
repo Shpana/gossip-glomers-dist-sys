@@ -8,12 +8,11 @@ namespace ds::echo {
     static constexpr std::string_view kTypeOk = "echo_ok";
 
   public:
-    [[nodiscard]] std::string_view name() const override {
+    [[nodiscard]] std::string_view type() const override {
       return "echo";
     }
 
-    core::Response handle(core::Context&& context,
-                          core::Request&& request) override {
+    core::Response handle(core::Request&& request) override {
       auto echo_body = nlohmann::json({});
       echo_body["echo"] = request.body["echo"];
       return request.reply(kTypeOk, std::move(echo_body));
