@@ -140,7 +140,7 @@ namespace ds::core {
           response = std::move(std::move(f).Get().Ok());
         } catch (const std::exception& ex) {
           LOG_ERROR() << fmt::format(
-              "There is error, when handling '{}', ex: {}", type, ex.what());
+              "There is error, when handling '{}', ex: {}\n", type, ex.what());
         }
 
         transport_->send(std::move(response).toMessage());
