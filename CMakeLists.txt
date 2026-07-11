@@ -18,7 +18,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
+FetchContent_Declare(yaclib
+  GIT_REPOSITORY https://github.com/YACLib/YACLib.git
+  GIT_TAG main
+)
+FetchContent_MakeAvailable(yaclib)
+
 add_subdirectory(core)
 
-add_subdirectory(echo)
-add_subdirectory(unique_ids)
+add_subdirectory(1-echo)
+add_subdirectory(2-unique_ids)
+add_subdirectory(3a-broadcast)
