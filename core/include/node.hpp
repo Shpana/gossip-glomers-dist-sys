@@ -43,7 +43,7 @@ namespace ds::core {
     std::shared_ptr<Transport> transport_;
     std::optional<Environment<State>> env_{std::nullopt};
 
-    Network network_;
+    std::shared_ptr<Network> network_;
 
     bool was_started_{false};
     std::unordered_map<std::string, std::unique_ptr<HandlerBase<State>>>
@@ -52,16 +52,16 @@ namespace ds::core {
 
   template<typename State>
   Node<State>::Node()
-      : thread_pool_{yaclib::MakeFairThreadPool(4)},
+      : thread_pool_{yaclib::MakeFairThreadPool(2)},
         transport_{std::make_shared<Transport>()},
-        network_{thread_pool_, transport_} {}
+        network_{std::make_shared<Network>(thread_pool_, transport_)} {}
 
   template<typename State>
   void Node<State>::run() {
     if (start()) {
       LOG_INFO() << "Node successfully started!\n";
 
-      while (transport_->isRunning()) {
+      while (transport_->isStreaming()) {
         auto message = transport_->recieve();
         if (!message.has_value()) {
           continue;
@@ -93,6 +93,8 @@ namespace ds::core {
 
   template<typename State>
   bool Node<State>::start() {
+    transport_->start();
+
     auto message = transport_->recieve();
     if (!message.has_value()) {
       LOG_ERROR() << "Failed to start node: cannot parse message!\n";
@@ -104,6 +106,8 @@ namespace ds::core {
       LOG_ERROR() << "Failed to start node: errors in init's request!\n";
       return false;
     }
+
+    network_->start();
 
     const auto& body = init_request.value().body;
     env_.emplace(Environment<State>{
@@ -130,7 +134,7 @@ namespace ds::core {
       auto f = yaclib::Run(*thread_pool_, [this, type, it,
                                            request =
                                                std::move(request)]() mutable {
-        auto session = network_.makeSession(env_->node_id);
+        auto session = network_->makeSession(env_->node_id);
 
         Response response;
 
@@ -153,19 +157,23 @@ namespace ds::core {
 
   template<typename State>
   void Node<State>::handle(Response&& response) {
-    network_.handle(std::move(response));
+    network_->handle(std::move(response));
   }
 
   template<typename State>
   void Node<State>::stop() {
-    thread_pool_->SoftStop();
-    thread_pool_->Wait();
-
     if (was_started_) {
       for (auto& [type, handler]: handlers_) {
         handler->stop();
         handler->stopInternal();
       }
     }
+
+    network_->stop();
+
+    transport_->stop();
+
+    thread_pool_->SoftStop();
+    thread_pool_->Wait();
   }
 }// namespace ds::core

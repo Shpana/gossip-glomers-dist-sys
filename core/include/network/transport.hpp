@@ -1,6 +1,6 @@
 #pragma once
 
-#include <iostream>
+#include <atomic>
 
 #include <fmt/format.h>
 
@@ -10,14 +10,17 @@
 namespace ds::core {
   class Transport {
   public:
+    void start();
+    void stop();
+
     void send(Message&& message);
     std::optional<Message> recieve();
 
-    [[nodiscard]] bool isRunning() const;
+    [[nodiscard]] bool isStreaming() const;
 
   private:
-    bool is_running_{true};
-
+    std::atomic<bool> is_running_{false};
+    std::atomic<bool> end_of_stream_{false};
     std::mutex mtx_{};
   };
 }// namespace ds::core
