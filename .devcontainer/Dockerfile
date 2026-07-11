@@ -8,12 +8,13 @@ RUN apt update && apt install -y \
     git \
     git-lfs \
     cmake \
-    build-essential \
+    make \
     python3 \
     python3-pip \
     python3-venv \
     clang-format \
-    clang-tidy
+    clang-tidy \
+    clang-19
 
 # Install maelstrom
 RUN apt update && apt install -y \
