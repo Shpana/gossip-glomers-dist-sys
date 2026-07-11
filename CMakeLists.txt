@@ -26,6 +26,6 @@ FetchContent_MakeAvailable(yaclib)
 
 add_subdirectory(core)
 
-add_subdirectory(echo)
-add_subdirectory(unique_ids)
-add_subdirectory(broadcast)
+add_subdirectory(1-echo)
+add_subdirectory(2-unique_ids)
+add_subdirectory(3a-broadcast)

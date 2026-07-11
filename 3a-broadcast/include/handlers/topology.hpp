@@ -2,8 +2,7 @@
 
 #include <yaclib/async/make.hpp>
 
-#include "logging.hpp"
-#include "node.hpp"
+#include "handler.hpp"
 
 #include "state.hpp"
 
@@ -12,8 +11,9 @@ namespace ds::broadcast {
   public:
     static constexpr std::string_view type = "topology";
 
-    yaclib::Future<core::Response> handle(core::Network::Session&& session,
-                                          core::Request&& request) override {
+    yaclib::Future<core::Response>
+    handle([[maybe_unused]] core::Network::Session&& session,
+           core::Request&& request) override {
       env_->state->topology.emplace(
           request.body["topology"]
               .get<

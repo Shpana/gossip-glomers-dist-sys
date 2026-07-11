@@ -5,7 +5,7 @@
 namespace ds::core {
   void Transport::send(Message&& message) {
     if (!is_running_) {
-      LOG_ERROR() << "Try to send message by not running transport!\n"; 
+      LOG_ERROR() << "Try to send message by not running transport!\n";
       return;
     }
 
@@ -18,7 +18,7 @@ namespace ds::core {
 
   std::optional<Message> Transport::recieve() {
     if (!is_running_) {
-      LOG_ERROR() << "Try to send message by not running transport!\n"; 
+      LOG_ERROR() << "Try to send message by not running transport!\n";
       return std::nullopt;
     }
 

@@ -11,6 +11,7 @@
 #include <yaclib/runtime/fair_thread_pool.hpp>
 #include <yaclib/util/intrusive_ptr.hpp>
 
+#include "environment.hpp"
 #include "handler.hpp"
 #include "logging.hpp"
 #include "network/messages.hpp"
@@ -21,13 +22,6 @@ namespace ds::core {
   template<typename State>
   class Node {
     static constexpr std::string_view kInit = "init";
-
-  public:
-    struct Environment {
-      std::string node_id;
-      std::vector<std::string> available_node_ids;
-      std::shared_ptr<State> state;
-    };
 
   public:
     Node();
@@ -47,7 +41,7 @@ namespace ds::core {
     yaclib::IntrusivePtr<yaclib::FairThreadPool> thread_pool_;
 
     std::shared_ptr<Transport> transport_;
-    std::optional<Environment> env_{std::nullopt};
+    std::optional<Environment<State>> env_{std::nullopt};
 
     Network network_;
 
@@ -112,13 +106,14 @@ namespace ds::core {
     }
 
     const auto& body = init_request.value().body;
-    env_.emplace(Environment{
+    env_.emplace(Environment<State>{
         .node_id = body["node_id"].get<std::string>(),
         .available_node_ids = body["node_ids"].get<std::vector<std::string>>(),
         .state = std::make_shared<State>()});
 
     for (auto& [type, handler]: handlers_) {
-      handler->start(env_.value());
+      handler->startInternal(env_.value());
+      handler->start();
     }
 
     std::exchange(was_started_, true);
@@ -132,8 +127,9 @@ namespace ds::core {
     const auto& type = request.type;
 
     if (auto it = handlers_.find(type); it != handlers_.end()) {
-      yaclib::Run(*thread_pool_, [this, type, it,
-                                  request = std::move(request)]() mutable {
+      auto f = yaclib::Run(*thread_pool_, [this, type, it,
+                                           request =
+                                               std::move(request)]() mutable {
         auto session = network_.makeSession(env_->node_id);
 
         Response response;
@@ -168,6 +164,7 @@ namespace ds::core {
     if (was_started_) {
       for (auto& [type, handler]: handlers_) {
         handler->stop();
+        handler->stopInternal();
       }
     }
   }
