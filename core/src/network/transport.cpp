@@ -10,10 +10,14 @@ namespace ds::core {
     }
 
     nlohmann::json json_message;
-    json_message["src"] = message.source;
-    json_message["dest"] = message.destination;
-    json_message["body"] = message.body;
-    std::cout << json_message << std::endl;
+    json_message["src"] = std::move(message.source);
+    json_message["dest"] = std::move(message.destination);
+    json_message["body"] = std::move(message.body);
+
+    {
+      std::lock_guard guard{mtx_};
+      std::cout << json_message << std::endl;
+    }
   }
 
   std::optional<Message> Transport::recieve() {

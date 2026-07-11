@@ -64,7 +64,7 @@ namespace ds::core {
   void Network::Session::send(std::string destination, nlohmann::json body) {
     network_.send(Request{.source = source_,
                           .destination = std::move(destination),
-                          .type = Handler::type,
+                          .type = std::string{Handler::type},
                           .body = std::move(body),
                           .message_id = id_});
   }
@@ -75,7 +75,7 @@ namespace ds::core {
                                   nlohmann::json body) {
     return network_.call(Request{.source = source_,
                                  .destination = std::move(destination),
-                                 .type = Handler::type,
+                                 .type = std::string{Handler::type},
                                  .body = std::move(body),
                                  .message_id = id_});
   }

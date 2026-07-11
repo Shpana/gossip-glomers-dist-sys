@@ -28,8 +28,6 @@ namespace ds::core {
 
       std::move(p).Set(std::move(response));
     }
-
-    LOG_ERROR() << fmt::format("No waiters for id={}!\n", id);
   }
 
   Network::Session Network::makeSession(std::string source) {

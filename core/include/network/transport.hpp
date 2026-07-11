@@ -17,5 +17,7 @@ namespace ds::core {
 
   private:
     bool is_running_{true};
+
+    std::mutex mtx_{};
   };
 }// namespace ds::core

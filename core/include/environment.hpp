@@ -7,8 +7,8 @@
 namespace ds::core {
   template<typename State>
   struct Environment {
-    std::string node_id;
-    std::vector<std::string> available_node_ids;
-    std::shared_ptr<State> state;
+    const std::string node_id;
+    const std::vector<std::string> available_node_ids;
+    const std::shared_ptr<State> state;
   };
 }// namespace ds::core
