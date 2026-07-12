@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 
 #include <yaclib/async/future.hpp>
@@ -12,6 +13,7 @@ namespace ds::core {
   template<typename State>
   class Node;
 
+  // Handles requests on the fly
   template<typename State>
   class HandlerBase {
   public:
@@ -31,4 +33,10 @@ namespace ds::core {
     void startInternal(Environment<State> env) { env_.emplace(std::move(env)); }
     void stopInternal() {}
   };
+
+  template<typename Handler, typename State>
+  concept IsHandler = std::derived_from<Handler, HandlerBase<State>> &&
+                      requires(Handler handler) {
+                        { Handler::type };
+                      };
 }// namespace ds::core
