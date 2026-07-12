@@ -57,7 +57,10 @@ namespace ds::core {
 
     void send(Request&& request);
     void sendAtLeastOnce(Request&& request);
-    yaclib::FutureOn<Response> call(Request&& request);
+    // Cancallation tokens?
+    yaclib::FutureOn<Response>
+    call(Request&& request,
+         std::optional<Clock::duration> timeout = std::nullopt);
 
     void updateWaiters();
 
@@ -80,6 +83,7 @@ namespace ds::core {
   template<>
   struct Network::Waiter<Network::Policy::Once> {
     yaclib::Promise<Response> p;
+    std::optional<Clock::time_point> deadline;
   };
 
   template<>
@@ -108,8 +112,9 @@ namespace ds::core {
     template<typename Handler>
     void sendAtLeastOnce(std::string destination, nlohmann::json body);
     template<typename Handler>
-    yaclib::FutureOn<Response> call(std::string destination,
-                                    nlohmann::json body);
+    yaclib::FutureOn<Response>
+    call(std::string destination, nlohmann::json body,
+         std::optional<Network::Clock::duration> timeout = std::nullopt);
 
   private:
     template<typename Handler>
@@ -135,11 +140,11 @@ namespace ds::core {
   }
 
   template<typename Handler>
-  yaclib::FutureOn<Response>
-  Network::Session::Session::call(std::string destination,
-                                  nlohmann::json body) {
+  yaclib::FutureOn<Response> Network::Session::Session::call(
+      std::string destination, nlohmann::json body,
+      std::optional<Network::Clock::duration> timeout) {
     return network_.call(
-        makeRequest<Handler>(std::move(destination), std::move(body)));
+        makeRequest<Handler>(std::move(destination), std::move(body)), timeout);
   }
 
   template<typename Handler>

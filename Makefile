@@ -15,6 +15,8 @@ all-broadcast-b: all-core
 	cmake --build build/ --target 3b-broadcast
 all-broadcast-c: all-core
 	cmake --build build/ --target 3c-broadcast
+all-broadcast-d: all-core
+	cmake --build build/ --target 3d-broadcast
 
 maelstrom-echo: all-echo
 	maelstrom test -w echo --bin ./build/1-echo/1-echo --node-count 3 --time-limit 60 	
@@ -24,24 +26,30 @@ maelstrom-broadcast-a: all-broadcast-a
 	maelstrom test -w broadcast --bin ./build/3a-broadcast/3a-broadcast --log-stderr --node-count 1 --time-limit 20 --rate 10
 maelstrom-broadcast-b: all-broadcast-b
 	maelstrom test -w broadcast --bin ./build/3b-broadcast/3b-broadcast --log-stderr --node-count 5 --time-limit 20 --rate 10
+# 	maelstrom test -w broadcast --bin ./build/3b-broadcast/3b-broadcast --log-stderr --node-count 1 --time-limit 20 --rate 10
 maelstrom-broadcast-c: all-broadcast-c
 	maelstrom test -w broadcast --bin ./build/3c-broadcast/3c-broadcast --log-stderr --node-count 5 --time-limit 20 --rate 10 --nemesis partition
+# 	maelstrom test -w broadcast --bin ./build/3c-broadcast/3c-broadcast --log-stderr --node-count 5 --time-limit 20 --rate 10
+# 	maelstrom test -w broadcast --bin ./build/3c-broadcast/3c-broadcast --log-stderr --node-count 1 --time-limit 20 --rate 10
+maelstrom-broadcast-d: all-broadcast-d
+	maelstrom test -w broadcast --bin ./build/3d-broadcast/3d-broadcast --log-stderr --node-count 25 --time-limit 20 --rate 100 --latency 100 
+# 	maelstrom test -w broadcast --bin ./build/3d-broadcast/3d-broadcast --log-stderr --node-count 5 --time-limit 20 --rate 10 --nemesis partition
+# 	maelstrom test -w broadcast --bin ./build/3d-broadcast/3d-broadcast --log-stderr --node-count 5 --time-limit 20 --rate 10
+# 	maelstrom test -w broadcast --bin ./build/3d-broadcast/3d-broadcast --log-stderr --node-count 1 --time-limit 20 --rate 10
 
 format:
 	find ./core/src/ -iname '*.cpp' | xargs clang-format -i
 	find ./core/include/ -iname '*.hpp' | xargs clang-format -i
-
 	find ./1-echo/src/ -iname '*.cpp' | xargs clang-format -i
 	find ./1-echo/include/ -iname '*.hpp' | xargs clang-format -i
-
 	find ./2-unique_ids/src/ -iname '*.cpp' | xargs clang-format -i
 	find ./2-unique_ids/include/ -iname '*.hpp' | xargs clang-format -i
-
 	find ./3a-broadcast/src/ -iname '*.cpp' | xargs clang-format -i
 	find ./3a-broadcast/include/ -iname '*.hpp' | xargs clang-format -i
-
 	find ./3b-broadcast/src/ -iname '*.cpp' | xargs clang-format -i
 	find ./3b-broadcast/include/ -iname '*.hpp' | xargs clang-format -i
-
 	find ./3c-broadcast/src/ -iname '*.cpp' | xargs clang-format -i
 	find ./3c-broadcast/include/ -iname '*.hpp' | xargs clang-format -i
+	find ./3d-broadcast/src/ -iname '*.cpp' | xargs clang-format -i
+	find ./3d-broadcast/include/ -iname '*.hpp' | xargs clang-format -i
+
