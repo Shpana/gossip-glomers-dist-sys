@@ -33,6 +33,11 @@ namespace maelstrom::detail {
       return buffer_.empty();
     }
 
+    [[nodiscard]] std::size_t size() const {
+      std::lock_guard guard{mtx_};
+      return buffer_.size();
+    }
+
     void close() {
       std::lock_guard guard{mtx_};
       is_closed_ = true;

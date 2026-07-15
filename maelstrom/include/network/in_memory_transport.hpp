@@ -22,6 +22,7 @@ namespace maelstrom {
 
     // TODO(shpana): better name?
     [[nodiscard]] bool hasNoResponses() const;
+    [[nodiscard]] std::size_t infligthResponses() const;
 
   private:
     std::atomic<bool> is_running_{false};

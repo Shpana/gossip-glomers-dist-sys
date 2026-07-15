@@ -52,4 +52,8 @@ namespace maelstrom {
   [[nodiscard]] bool InMemoryTransport::hasNoResponses() const {
     return out_.isEmpty();
   }
+
+  [[nodiscard]] std::size_t InMemoryTransport::infligthResponses() const {
+    return out_.size();
+  }
 }// namespace maelstrom

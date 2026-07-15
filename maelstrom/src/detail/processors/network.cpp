@@ -8,11 +8,11 @@ using namespace std::chrono_literals;
 
 namespace maelstrom::detail {
   namespace {
-    constexpr NetworkProcessor::Clock::duration repeat_threshold{1s};
+    constexpr NetworkProcessor::Clock::duration repeat_threshold{500ms};
   }// namespace
 
-  NetworkProcessor::NetworkProcessor(Timer& timer, ITransport& transport)
-      : timer_{timer}, transport_{transport} {}
+  NetworkProcessor::NetworkProcessor(ITransport& transport)
+      : transport_{transport} {}
 
   void NetworkProcessor::start() {
     std::exchange(is_running_, true);

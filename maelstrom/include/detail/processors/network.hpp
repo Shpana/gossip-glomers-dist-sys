@@ -23,7 +23,7 @@ namespace maelstrom::detail {
     using Waiters = std::unordered_map<std::uint64_t, Waiter<P>>;
 
   public:
-    explicit NetworkProcessor(Timer& timer, ITransport& transport);
+    explicit NetworkProcessor(ITransport& transport);
 
     void start();
     void stop();
@@ -66,8 +66,7 @@ namespace maelstrom::detail {
   private:
     bool is_running_{false};
 
-    Timer& timer_;
-
+    // TODO(shpana): move to timers
     std::thread assistant_;
 
     ITransport& transport_;
