@@ -4,6 +4,8 @@
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 
+#define DEBUG
+
 #ifdef DEBUG
 #define LOG_DEBUG()                                                            \
   std::cerr << fmt::format("[DEBUG][{}]: ", std::chrono::system_clock::now())

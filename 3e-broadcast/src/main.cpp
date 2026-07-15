@@ -7,7 +7,7 @@ using namespace std::chrono_literals;
 #include "handlers/read.hpp"
 #include "handlers/topology.hpp"
 
-#include "services/distributor.hpp"
+#include "workers/distributor.hpp"
 
 int main() {
   ds::core::Node<ds::broadcast::State> node{};
@@ -16,6 +16,6 @@ int main() {
   node.add<ds::broadcast::ReadHandler>();
   node.add<ds::broadcast::TopologyHandler>();
 
-  node.add<ds::broadcast::DistributorService>(800ms);
+  node.add<ds::broadcast::DistributorWorker>(500ms);
   node.run();
 }

@@ -1,5 +1,5 @@
 #pragma once
 
 namespace ds::core {
-  class Unit {};
+  struct Unit {};
 }// namespace ds::core

@@ -6,7 +6,7 @@ namespace ds::broadcast {
   yaclib::Future<core::Response>
   BroadcastHandler::handle(core::Network::Session&& session,
                            core::Request&& request) {
-    auto& storage = env_->state->storage;
+    auto& storage = state_->storage;
 
     auto new_num = request.body["message"].get<std::uint64_t>();
 
@@ -24,7 +24,7 @@ namespace ds::broadcast {
   yaclib::Future<core::Response>
   BroadcastBulkHandler::handle(core::Network::Session&& session,
                                core::Request&& request) {
-    auto& storage = env_->state->storage;
+    auto& storage = state_->storage;
 
     auto new_nums = request.body["messages"].get<std::vector<std::uint64_t>>();
 

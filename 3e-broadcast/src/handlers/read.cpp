@@ -6,7 +6,7 @@ namespace ds::broadcast {
   yaclib::Future<core::Response>
   ReadHandler::handle([[maybe_unused]] core::Network::Session&& session,
                       core::Request&& request) {
-    auto& storage = env_->state->storage;
+    auto& storage = state_->storage;
 
     auto body = nlohmann::json({});
 

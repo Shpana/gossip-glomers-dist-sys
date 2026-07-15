@@ -1,4 +1,4 @@
-#include "services/distributor.hpp"
+#include "workers/distributor.hpp"
 
 #include <yaclib/async/make.hpp>
 #include <yaclib/async/when_all.hpp>
@@ -7,16 +7,17 @@
 #include "network/network.hpp"
 
 #include "handlers/broadcast.hpp"
-#include "utils/unit.hpp"
 
 namespace ds::broadcast {
-  yaclib::Future<core::Unit>
-  DistributorService::process(core::Network::Session&& session) {
-    auto& info = env_->state->info;
-    auto& storage = env_->state->storage;
+  yaclib::Future<>
+  DistributorWorker::process(core::Network::Session&& session) {
+    LOG_INFO() << "distributor called!\n";
+
+    auto& info = state_->info;
+    auto& storage = state_->storage;
 
     if (!info.ready.load()) {
-      return yaclib::MakeFuture(core::Unit{});
+      return yaclib::MakeFuture();
     }
 
     std::vector<std::string> all_node_ids;
@@ -25,7 +26,7 @@ namespace ds::broadcast {
       all_node_ids = info.all_node_ids;
     }
 
-    std::vector<yaclib::FutureOn<core::Unit>> futs;
+    std::vector<yaclib::Future<>> futs;
     futs.reserve(all_node_ids.size());
 
     using namespace std::chrono_literals;
@@ -57,18 +58,14 @@ namespace ds::broadcast {
                     std::lock_guard guard{storage.mtx};
                     storage.maybe_unknown[node_id] = prev_end;
                   }
-                  return core::Unit{};
                 }));
       }
     }
 
     if (futs.empty()) {
-      return yaclib::MakeFuture(core::Unit{});
+      return yaclib::MakeFuture();
     }
 
-    return yaclib::WhenAll(futs.begin(), futs.end())
-        .ThenInline([](auto&& result) {
-          return core::Unit{};
-        });
+    return yaclib::WhenAll(futs.begin(), futs.end());
   }
 }// namespace ds::broadcast

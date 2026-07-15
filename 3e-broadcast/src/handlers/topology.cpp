@@ -6,8 +6,8 @@ namespace ds::broadcast {
   yaclib::Future<core::Response>
   TopologyHandler::handle([[maybe_unused]] core::Network::Session&& session,
                           core::Request&& request) {
-    auto& info = env_->state->info;
-    auto& storage = env_->state->storage;
+    auto& info = state_->info;
+    auto& storage = state_->storage;
 
     auto topology =
         request.body["topology"]

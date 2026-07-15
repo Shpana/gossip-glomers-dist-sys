@@ -1,101 +1,38 @@
 #pragma once
 
 #include <chrono>
-#include <memory>
-#include <unordered_map>
 
 #include <yaclib/async/future.hpp>
-#include <yaclib/async/promise.hpp>
-#include <yaclib/exe/executor.hpp>
 
+#include "detail/processors/network.hpp"
+#include "environment.hpp"
 #include "messages.hpp"
-#include "transport.hpp"
 
 namespace ds::core {
   class Network {
-    enum struct Policy { Once = 0, AtLeastOnce };
-
-    template<Policy P>
-    struct Waiter;
-
   public:
     class Session;
 
     using Clock = std::chrono::steady_clock;
 
   public:
-    Network(yaclib::IExecutorPtr executor,
-            std::shared_ptr<Transport> transport);
+    explicit Network(detail::NetworkProcessor& processor);
 
-    void start();
+    void start(Environment env);
     void stop();
 
-    void handle(Response&& response);
-    [[nodiscard]] Session makeSession(std::string source);
+    [[nodiscard]] Session makeSession();
 
   private:
-    template<typename Waiter>
-    bool handleWaiters(std::unordered_map<std::uint64_t, Waiter>& waiters,
-                       Response& response) {
-      auto it = waiters.find(response.in_reply_to);
-
-      if (it == waiters.end()) {
-        return false;
-      }
-
-      yaclib::Promise<Response> p;
-
-      {
-        std::lock_guard guard{mtx_};
-        p = std::move(it->second.p);
-        waiters.erase(it);
-      }
-
-      std::move(p).Set(std::move(response));
-      return true;
-    }
-
-    void send(Request&& request);
-    void sendAtLeastOnce(Request&& request);
-    // Cancallation tokens?
-    yaclib::FutureOn<Response>
-    call(Request&& request,
-         std::optional<Clock::duration> timeout = std::nullopt);
-
-    void updateWaiters();
-
-  private:
-    yaclib::IExecutorPtr executor_;
-    std::shared_ptr<Transport> transport_;
-
-    std::thread timer_thread_;
-
-    std::atomic<bool> is_running_{false};
-
-    std::mutex mtx_{};
+    detail::NetworkProcessor& processor_;
+    Environment env_;
     std::atomic<std::uint64_t> previous_id_{0};
-    std::unordered_map<std::uint64_t, Waiter<Policy::Once>>
-        waiters_once_{};// Guarded by mtx_
-    std::unordered_map<std::uint64_t, Waiter<Policy::AtLeastOnce>>
-        waiters_at_least_once_{};// Guarded by mtx_
   };
 
-  template<>
-  struct Network::Waiter<Network::Policy::Once> {
-    yaclib::Promise<Response> p;
-    std::optional<Clock::time_point> deadline;
-  };
-
-  template<>
-  struct Network::Waiter<Network::Policy::AtLeastOnce> {
-    yaclib::Promise<Response> p;
-    Clock::time_point last_updated;
-    Request request_copy;
-  };
-
+  // User-API wrapper for interaction with network
   class Network::Session {
   public:
-    Session(Network& network, std::string sourse);
+    explicit Session(Network& network);
 
     // Non-copyable
     Session(const Session&) = delete;
@@ -112,9 +49,13 @@ namespace ds::core {
     template<typename Handler>
     void sendAtLeastOnce(std::string destination, nlohmann::json body);
     template<typename Handler>
-    yaclib::FutureOn<Response>
+    yaclib::Future<Response>
     call(std::string destination, nlohmann::json body,
          std::optional<Network::Clock::duration> timeout = std::nullopt);
+    template<typename Handler>
+    yaclib::Future<Response> callAtLeastOnce(
+        std::string destination, nlohmann::json body,
+        std::optional<Network::Clock::duration> timeout = std::nullopt);
 
   private:
     template<typename Handler>
@@ -123,34 +64,41 @@ namespace ds::core {
 
   private:
     Network& network_;
-    std::string source_;
   };
 
   template<typename Handler>
   void Network::Session::send(std::string destination, nlohmann::json body) {
-    network_.send(
+    network_.processor_.send(
         makeRequest<Handler>(std::move(destination), std::move(body)));
   }
 
   template<typename Handler>
   void Network::Session::sendAtLeastOnce(std::string destination,
                                          nlohmann::json body) {
-    network_.sendAtLeastOnce(
+    network_.processor_.sendAtLeastOnce(
         makeRequest<Handler>(std::move(destination), std::move(body)));
   }
 
   template<typename Handler>
-  yaclib::FutureOn<Response> Network::Session::Session::call(
+  yaclib::Future<Response> Network::Session::Session::call(
       std::string destination, nlohmann::json body,
       std::optional<Network::Clock::duration> timeout) {
-    return network_.call(
+    return network_.processor_.call(
+        makeRequest<Handler>(std::move(destination), std::move(body)), timeout);
+  }
+
+  template<typename Handler>
+  yaclib::Future<Response> Network::Session::Session::callAtLeastOnce(
+      std::string destination, nlohmann::json body,
+      std::optional<Network::Clock::duration> timeout) {
+    return network_.processor_.callAtLeastOnce(
         makeRequest<Handler>(std::move(destination), std::move(body)), timeout);
   }
 
   template<typename Handler>
   Request Network::Session::makeRequest(std::string destination,
                                         nlohmann::json body) const {
-    return Request{.source = source_,
+    return Request{.source = network_.env_.node_id,
                    .destination = std::move(destination),
                    .type = std::string{Handler::type},
                    .body = std::move(body),

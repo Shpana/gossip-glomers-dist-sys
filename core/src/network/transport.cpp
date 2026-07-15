@@ -5,9 +5,7 @@
 namespace ds::core {
   void Transport::start() { is_running_.store(true); }
 
-  void Transport::stop() {
-    is_running_.store(false);
-  }
+  void Transport::stop() { is_running_.store(false); }
 
   void Transport::send(Message&& message) {
     if (!is_running_.load()) {

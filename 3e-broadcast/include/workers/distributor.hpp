@@ -1,17 +1,17 @@
 #pragma once
 
-#include "routines/service.hpp"
+#include "routines/worker.hpp"
 
 #include "state.hpp"
 
 namespace ds::broadcast {
-  class DistributorService final : public core::ServiceBase<State> {
+  class DistributorWorker final : public core::WorkerBase<State> {
   public:
     static constexpr std::string_view type = "distributor";
 
-    using core::ServiceBase<State>::ServiceBase;
+    using core::WorkerBase<State>::WorkerBase;
 
-    yaclib::Future<core::Unit>
+    yaclib::Future<>
     process([[maybe_unused]] core::Network::Session&& session) override;
   };
 }// namespace ds::broadcast

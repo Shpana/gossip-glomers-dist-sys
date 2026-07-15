@@ -10,10 +10,11 @@
 #include "network/network.hpp"
 
 namespace ds::core {
-  template<typename State>
-  class Node;
+  namespace detail {
+    template<typename State>
+    class HandlersProcessor;
+  }
 
-  // Handles requests on the fly
   template<typename State>
   class HandlerBase {
   public:
@@ -25,14 +26,26 @@ namespace ds::core {
     virtual void stop() {}
 
   protected:
-    std::optional<Environment<State>> env_{std::nullopt};
+    std::optional<const Environment> env_{std::nullopt};
+    std::shared_ptr<State> state_;
 
   private:
-    friend Node<State>;
+    friend detail::HandlersProcessor<State>;
 
-    void startInternal(Environment<State> env) { env_.emplace(std::move(env)); }
-    void stopInternal() {}
+    void startInternal(Environment env, std::shared_ptr<State> state);
+    void stopInternal();
   };
+
+  template<typename State>
+  void HandlerBase<State>::startInternal(Environment env,
+                                         std::shared_ptr<State> state) {
+    env_.emplace(std::move(env));
+    state_ = std::move(state);
+  }
+
+  template<typename State>
+  void HandlerBase<State>::stopInternal() {}
+
 
   template<typename Handler, typename State>
   concept IsHandler = std::derived_from<Handler, HandlerBase<State>> &&

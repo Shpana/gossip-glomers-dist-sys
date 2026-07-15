@@ -4,9 +4,13 @@
 
 #include <nlohmann/json.hpp>
 
+#include "network/detail/errors.hpp"
+
 namespace ds::core {
   struct Request;
   struct Response;
+
+  struct Error;
 
   struct Message {
     std::string source;
@@ -33,6 +37,8 @@ namespace ds::core {
 
     Response toResponse(nlohmann::json body) &&;
     Response toResponse() &&;
+
+    Error toError(ErrorCode code, std::string what = {}) &&;
   };
 
   struct Response {
@@ -43,5 +49,20 @@ namespace ds::core {
     std::uint64_t in_reply_to;
 
     Message toMessage() &&;
+
+    [[nodiscard]] bool isError() const;
+    std::optional<Error> toError() &&;
+  };
+
+  struct Error {
+    std::string source;
+    std::string destination;
+    std::string type;
+    ErrorCode code;
+    std::string what;
+    nlohmann::json body;
+    std::uint64_t in_reply_to;
+
+    Response toResponse() &&;
   };
 }// namespace ds::core

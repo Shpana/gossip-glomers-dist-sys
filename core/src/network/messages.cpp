@@ -75,6 +75,16 @@ namespace ds::core {
     return std::move(*this).toResponse(nlohmann::json({}));
   }
 
+  Error Request::toError(ErrorCode code, std::string what) && {
+    return Error{.source = std::move(destination),
+                 .destination = std::move(source),
+                 .type = std::string{error_type},
+                 .code = code,
+                 .what = std::move(what),
+                 .body = std::move(body),
+                 .in_reply_to = message_id};
+  }
+
   Message Response::toMessage() && {
     body["type"] = std::move(type);
     body["in_reply_to"] = in_reply_to;
@@ -82,5 +92,35 @@ namespace ds::core {
     return Message{.source = std::move(source),
                    .destination = std::move(destination),
                    .body = std::move(body)};
+  }
+
+  bool Response::isError() const {
+    return type == error_type && body.contains("error") &&
+           body.contains("text");
+  }
+
+  std::optional<Error> Response::toError() && {
+    if (!isError()) {
+      return std::nullopt;
+    }
+
+    return Error{.source = std::move(source),
+                 .destination = std::move(destination),
+                 .type = std::string{error_type},
+                 .code = body["error"].get<ErrorCode>(),
+                 .what = std::move(body["text"].get<std::string>()),
+                 .body = std::move(body),
+                 .in_reply_to = in_reply_to};
+  }
+
+  Response Error::toResponse() && {
+    body["error"] = code;
+    body["text"] = std::move(what);
+
+    return Response{.source = std::move(source),
+                    .destination = std::move(destination),
+                    .type = std::move(type),
+                    .body = std::move(body),
+                    .in_reply_to = in_reply_to};
   }
 }// namespace ds::core

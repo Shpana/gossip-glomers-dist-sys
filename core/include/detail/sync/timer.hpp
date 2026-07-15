@@ -1,0 +1,46 @@
+#pragma once
+
+#include <chrono>
+#include <condition_variable>
+#include <map>
+#include <mutex>
+#include <thread>
+
+#include <yaclib/async/run.hpp>
+#include <yaclib/exe/executor.hpp>
+
+#include "action.hpp"
+
+#include "logging.hpp"
+
+namespace ds::core::detail {
+  class Timer {
+    using Clock = std::chrono::steady_clock;
+
+  public:
+    explicit Timer(yaclib::IExecutor& executor);
+
+    void start();
+    void stop();
+
+    void submit(Action&& action);
+
+    void set(Clock::duration delay, Action&& action);
+    void set(Clock::time_point deadline, Action&& action);
+
+  private:
+    void process();
+
+  private:
+    std::atomic<bool> is_running_{false};
+
+    yaclib::IExecutor& executor_;
+    std::thread assistant_;
+
+    std::mutex mtx_{};
+    std::map<Clock::time_point, Action> waiters_{};// Guarded by mtx_
+
+    std::condition_variable process_on_time_{};
+    std::condition_variable is_empty_{};
+  };
+}// namespace ds::core::detail

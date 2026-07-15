@@ -1,4 +1,4 @@
-#include "services/distributor.hpp"
+#include "workers/distributor.hpp"
 
 #include <yaclib/async/make.hpp>
 #include <yaclib/async/when_all.hpp>
@@ -11,7 +11,7 @@
 
 namespace ds::broadcast {
   yaclib::Future<core::Unit>
-  DistributorService::process(core::Network::Session&& session) {
+  DistributorWorker::process(core::Network::Session&& session) {
     auto& info = env_->state->info;
     auto& storage = env_->state->storage;
 

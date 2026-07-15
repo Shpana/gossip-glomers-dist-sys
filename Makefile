@@ -1,7 +1,12 @@
 CUR_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST)))) 
 
 warmup:
-	cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build/
+	cmake \
+		-DCMAKE_CXX_COMPILER=/usr/bin/clang++-19 \
+		-DCMAKE_C_COMPILER=/usr/bin/clang-19 \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+		-DYACLIB_FLAGS=CORO \
+		-S . -B build/
 
 all-core: warmup
 	cmake --build build/ --target core
@@ -19,6 +24,8 @@ all-broadcast-d: all-core
 	cmake --build build/ --target 3d-broadcast
 all-broadcast-e: all-core
 	cmake --build build/ --target 3e-broadcast
+all-gcounter: all-core
+	cmake --build build/ --target 4-gcounter 
 
 maelstrom-echo: all-echo
 	maelstrom test -w echo --bin ./build/1-echo/1-echo --node-count 3 --time-limit 60 	
