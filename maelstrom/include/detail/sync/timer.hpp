@@ -11,7 +11,7 @@
 
 #include "action.hpp"
 
-#include "logging.hpp"
+#include "log/logging.hpp"
 
 namespace maelstrom::detail {
   class Timer {

@@ -19,7 +19,7 @@ namespace maelstrom::detail {
   template<typename State>
   class HandlersProcessor {
   public:
-    HandlersProcessor(yaclib::IExecutor& executor, Transport& transport,
+    HandlersProcessor(yaclib::IExecutor& executor, ITransport& transport,
                       Network& network);
 
     template<IsHandler<State> Handler, typename... Args>
@@ -35,7 +35,7 @@ namespace maelstrom::detail {
 
     yaclib::IExecutor& executor_;
 
-    Transport& transport_;
+    ITransport& transport_;
     Network& network_;
 
     std::unordered_map<std::string, std::unique_ptr<HandlerBase<State>>>
@@ -44,7 +44,7 @@ namespace maelstrom::detail {
 
   template<typename State>
   HandlersProcessor<State>::HandlersProcessor(yaclib::IExecutor& executor,
-                                              Transport& transport,
+                                              ITransport& transport,
                                               Network& network)
       : executor_{executor},  //
         transport_{transport},//

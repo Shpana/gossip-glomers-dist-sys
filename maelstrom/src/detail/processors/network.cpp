@@ -4,8 +4,6 @@
 #include <yaclib/async/contract.hpp>
 #include <yaclib/util/result.hpp>
 
-#include "network/detail/timeouts.hpp"
-
 using namespace std::chrono_literals;
 
 namespace maelstrom::detail {
@@ -13,7 +11,7 @@ namespace maelstrom::detail {
     constexpr NetworkProcessor::Clock::duration repeat_threshold{1s};
   }// namespace
 
-  NetworkProcessor::NetworkProcessor(Timer& timer, Transport& transport)
+  NetworkProcessor::NetworkProcessor(Timer& timer, ITransport& transport)
       : timer_{timer}, transport_{transport} {}
 
   void NetworkProcessor::start() {
@@ -22,7 +20,13 @@ namespace maelstrom::detail {
     assistant_ = std::thread{[this]() { backgroundUpdate(); }};
   }
 
-  void NetworkProcessor::stop() { std::exchange(is_running_, false); }
+  void NetworkProcessor::stop() {
+    std::exchange(is_running_, false);
+
+    if (assistant_.joinable()) {
+      assistant_.join();
+    }
+  }
 
   void NetworkProcessor::process(Response&& response) {
     if (processInternal(once_, response)) {
@@ -173,8 +177,7 @@ namespace maelstrom::detail {
                                                Clock::time_point now) {
     for (auto& [id, waiter]: waiters) {
       if (waiter.deadline.has_value() && waiter.deadline.value() < now) {
-        std::move(waiter.p).Set(
-            std::make_exception_ptr(detail::TimeoutException{}));
+        std::move(waiter.p).Set(std::make_exception_ptr(TimeoutException{}));
       }
     }
 

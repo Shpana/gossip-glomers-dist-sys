@@ -1,26 +1,24 @@
 #pragma once
 
-#include <atomic>
-
 #include <fmt/format.h>
 
-#include "logging.hpp"
 #include "messages.hpp"
 
 namespace maelstrom {
-  class Transport {
+  // TODO(shpana): start, stop methods not for user!
+  class ITransport {
   public:
-    void start();
-    void stop();
+    virtual ~ITransport() = default;
 
-    void send(Message&& message);
-    std::optional<Message> recieve();
+    virtual void start() = 0;
+    virtual void stop() = 0;
 
-    [[nodiscard]] bool isStreaming() const;
+    virtual void send(Message&& message) = 0;
+    virtual std::optional<Message> recieve() = 0;
 
-  private:
-    std::atomic<bool> is_running_{false};
-    std::atomic<bool> end_of_stream_{false};
-    std::mutex mtx_{};
+    virtual void stopStreaming() = 0;
+    [[nodiscard]] virtual bool isStreaming() const = 0;
+
+    [[nodiscard]] virtual bool isRunning() const = 0;
   };
 }// namespace maelstrom

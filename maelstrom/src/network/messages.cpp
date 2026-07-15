@@ -1,6 +1,10 @@
 #include "network/messages.hpp"
 
 namespace maelstrom {
+  namespace {
+    constexpr std::string_view error_type = "error";
+  }
+
   bool Message::isRequest() const {
     return body.contains("type") && body.contains("msg_id");
   }
@@ -37,6 +41,14 @@ namespace maelstrom {
                     .type = std::move(type),
                     .body = std::move(body),
                     .in_reply_to = in_reply_to};
+  }
+
+  nlohmann::json Message::toJson() && {
+    nlohmann::json json_message;
+    json_message["src"] = std::move(source);
+    json_message["dest"] = std::move(destination);
+    json_message["body"] = std::move(body);
+    return json_message;
   }
 
   std::optional<Message> Message::parse(std::string raw_message) {

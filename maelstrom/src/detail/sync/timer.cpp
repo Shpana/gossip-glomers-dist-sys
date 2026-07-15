@@ -1,6 +1,6 @@
 #include "detail/sync/timer.hpp"
 
-#include "logging.hpp"
+#include "log/logging.hpp"
 
 namespace maelstrom::detail {
   Timer::Timer(yaclib::IExecutor& executor) : executor_{executor} {}

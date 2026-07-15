@@ -13,7 +13,8 @@
 #include "detail/processors/workers.hpp"
 #include "detail/sync/timer.hpp"
 #include "environment.hpp"
-#include "logging.hpp"
+#include "log/logging.hpp"
+#include "network/console_transport.hpp"
 #include "network/network.hpp"
 #include "network/transport.hpp"
 
@@ -23,7 +24,8 @@ namespace maelstrom {
                      private detail::HandlersProcessor<State>,
                      private detail::WorkersProcessor<State> {
   public:
-    Node();
+    explicit Node(std::shared_ptr<ITransport> transport =
+                      std::make_shared<ConsoleTransport>());
 
     void run();
 
@@ -31,8 +33,8 @@ namespace maelstrom {
     using detail::WorkersProcessor<State>::add;
 
   private:
-    void start();
-    void loadEnvironment();
+    bool start();
+    bool loadEnvironment();
 
     void stop();
 
@@ -40,7 +42,7 @@ namespace maelstrom {
     yaclib::FairThreadPool cpu_pool_;
     detail::Timer background_;
 
-    Transport transport_;
+    std::shared_ptr<ITransport> transport_;
     Network network_;
 
     std::optional<Environment> env_{std::nullopt};
@@ -48,20 +50,22 @@ namespace maelstrom {
   };
 
   template<typename State>
-  Node<State>::Node()
-      : cpu_pool_{yaclib::FairThreadPool{2}},                             //
-        background_{cpu_pool_},                                           //
-        transport_{},                                                     //
-        network_{*this},                                                  //
-        detail::NetworkProcessor{background_, transport_},                //
-        detail::HandlersProcessor<State>{cpu_pool_, transport_, network_},//
-        detail::WorkersProcessor<State>{background_, network_} {}
+  Node<State>::Node(std::shared_ptr<ITransport> transport)
+      : detail::NetworkProcessor{background_, *transport},
+        detail::HandlersProcessor<State>{cpu_pool_, *transport, network_},
+        detail::WorkersProcessor<State>{background_, network_},
+        cpu_pool_{yaclib::FairThreadPool{2}}, background_{cpu_pool_},
+        transport_{std::move(transport)}, network_{*this} {}
 
   template<typename State>
-  void Node<State>::start() {
-    transport_.start();
+  bool Node<State>::start() {
+    LOG_INFO() << "Starting!\n";
 
-    loadEnvironment();
+    transport_->start();
+
+    if (!loadEnvironment()) {
+      return false;
+    }
 
     network_.start(env_.value());
 
@@ -71,14 +75,18 @@ namespace maelstrom {
     detail::NetworkProcessor::start();
     detail::HandlersProcessor<State>::start(env_.value(), state_);
     detail::WorkersProcessor<State>::start(env_.value(), state_);
+
+    LOG_INFO() << "Successfully started!\n";
+    return true;
   }
 
   template<typename State>
-  void Node<State>::loadEnvironment() {
-    auto message = transport_.recieve();
+  bool Node<State>::loadEnvironment() {
+    auto message = transport_->recieve();
     if (!message.has_value()) {
-      LOG_ERROR() << "Failed to load envrionment information!\n";
-      throw std::runtime_error{"Cannot parse initialization message!"};
+      LOG_ERROR() << "Failed to load envrionment information! Cannot parse "
+                     "initialization message!\n";
+      return false;
     }
 
     auto init_request = std::move(message.value()).toRequest();
@@ -86,52 +94,60 @@ namespace maelstrom {
     constexpr std::string_view init_type = "init";
 
     if (!init_request.has_value() || init_request.value().type != init_type) {
-      LOG_ERROR() << "Failed to load envrionment information!\n";
-      throw std::runtime_error{"There are errors in initializaiton's request!"};
+      LOG_ERROR() << "Failed to load envrionment information! There are errors "
+                     "in initializaiton's request!\n";
+      return false;
     }
 
     const auto& body = init_request.value().body;
+    if (!body.contains("node_id") || !body.contains("node_ids")) {
+      LOG_ERROR() << "Failed to load environment information! There are no "
+                     "required fields in request!\n";
+      return false;
+    }
+
     env_.emplace(
         Environment{.node_id = body["node_id"].get<std::string>(),
                     .available_node_ids =
                         body["node_ids"].get<std::vector<std::string>>()});
 
-    transport_.send(std::move(init_request.value()).toResponse().toMessage());
+    transport_->send(std::move(init_request.value()).toResponse().toMessage());
+    return true;
   }
 
   template<typename State>
   void Node<State>::run() {
-    start();
+    if (start()) {
+      while (transport_->isStreaming()) {
+        auto raw_message = transport_->recieve();
+        if (!raw_message.has_value()) {
+          continue;
+        }
 
-    LOG_INFO() << "Node successfully started!\n";
+        auto message = raw_message.value();
 
-    while (transport_.isStreaming()) {
-      auto raw_message = transport_.recieve();
-      if (!raw_message.has_value()) {
-        continue;
+        if (message.isRequest()) {
+          detail::HandlersProcessor<State>::process(
+              std::move(std::move(message).toRequest().value()));
+          continue;
+        } else if (message.isResponse()) {
+          detail::NetworkProcessor::process(
+              std::move(std::move(message).toResponse().value()));
+          continue;
+        }
+
+        LOG_ERROR() << "Unknown type of message!\n";
       }
-
-      auto message = raw_message.value();
-
-      if (message.isRequest()) {
-        detail::HandlersProcessor<State>::process(
-            std::move(std::move(message).toRequest().value()));
-        continue;
-      } else if (message.isResponse()) {
-        detail::NetworkProcessor::process(
-            std::move(std::move(message).toResponse().value()));
-        continue;
-      }
-
-      LOG_ERROR() << "Unknown type of message!\n";
     }
-
     stop();
   }
 
   template<typename State>
   void Node<State>::stop() {
+    LOG_INFO() << "Stopping!\n";
+
     cpu_pool_.SoftStop();
+    cpu_pool_.Wait();
 
     background_.stop();
 
@@ -141,8 +157,8 @@ namespace maelstrom {
     NetworkProcessor::stop();
 
     network_.stop();
-    transport_.stop();
+    transport_->stop();
 
-    cpu_pool_.Wait();
+    LOG_INFO() << "Successfully stopped!\n";
   }
 }// namespace maelstrom

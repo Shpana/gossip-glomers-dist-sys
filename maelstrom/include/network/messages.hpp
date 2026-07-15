@@ -4,13 +4,25 @@
 
 #include <nlohmann/json.hpp>
 
-#include "network/detail/errors.hpp"
-
 namespace maelstrom {
   struct Request;
   struct Response;
 
   struct Error;
+
+  enum struct ErrorCode : std::uint8_t {
+    Timeout = 0,
+    NodeNotFound = 1,
+    NotSupported = 10,
+    TemporarilyUnavailable = 11,
+    MalformedRequest = 12,
+    Crash = 13,
+    Abort = 14,
+    KeyDoesNotExists = 20,
+    KeyAlreadyExists = 21,
+    PreconditionFailed = 22,
+    TxnConflict = 30
+  };
 
   struct Message {
     std::string source;
@@ -22,6 +34,8 @@ namespace maelstrom {
 
     [[nodiscard]] bool isResponse() const;
     std::optional<Response> toResponse() &&;
+
+    nlohmann::json toJson() &&;
 
     static std::optional<Message> parse(std::string raw_message);
   };

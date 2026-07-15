@@ -1,10 +1,5 @@
 warmup:
-	cmake \
-		-DCMAKE_CXX_COMPILER=/usr/bin/clang++-19 \
-		-DCMAKE_C_COMPILER=/usr/bin/clang-19 \
-		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-		-DYACLIB_FLAGS=CORO \
-		-S . -B build/
+	cmake -S . -B build/
 
 all-maelstrom: warmup
 	cmake --build build/ --target maelstrom

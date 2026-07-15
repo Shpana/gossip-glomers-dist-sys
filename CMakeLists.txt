@@ -4,6 +4,8 @@ project(dist-sys CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 include(FetchContent)
 FetchContent_Declare(fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
@@ -20,10 +22,9 @@ FetchContent_Declare(yaclib
   GIT_REPOSITORY https://github.com/YACLib/YACLib.git
   GIT_TAG main
 )
+set(YACLIB_FLAGS "CORO" CACHE STRING "yaclib build flags")
 FetchContent_MakeAvailable(yaclib)
-set(YACLIB_FLAGS CORO)
 
-# Tests
 # TODO(shpana): add configuration without tests
 FetchContent_Declare(gtest
   GIT_REPOSITORY https://github.com/google/googletest.git

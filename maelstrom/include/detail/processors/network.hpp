@@ -22,25 +22,8 @@ namespace maelstrom::detail {
     template<WaitPolicy P>
     using Waiters = std::unordered_map<std::uint64_t, Waiter<P>>;
 
-    template<>
-    struct Waiter<WaitPolicy::Detached> {};
-
-    template<>
-    struct Waiter<WaitPolicy::Once> {
-      yaclib::Promise<Response> p;
-      std::optional<Clock::time_point> deadline;
-    };
-
-    template<>
-    struct Waiter<WaitPolicy::AtLeastOnce> {
-      yaclib::Promise<Response> p;
-      Clock::time_point updated_at;
-      std::optional<Clock::time_point> deadline;
-      Request request_copy;
-    };
-
   public:
-    explicit NetworkProcessor(Timer& timer, Transport& transport);
+    explicit NetworkProcessor(Timer& timer, ITransport& transport);
 
     void start();
     void stop();
@@ -87,10 +70,29 @@ namespace maelstrom::detail {
 
     std::thread assistant_;
 
-    Transport& transport_;
+    ITransport& transport_;
 
     std::mutex mtx_{};
     Waiters<WaitPolicy::Once> once_{};                // Guarded by mtx_
     Waiters<WaitPolicy::AtLeastOnce> at_least_once_{};// Guarded by mtx_
   };
+
+  template<>
+  struct NetworkProcessor::Waiter<WaitPolicy::Detached> {};
+
+  template<>
+  struct NetworkProcessor::Waiter<WaitPolicy::Once> {
+    yaclib::Promise<Response> p;
+    std::optional<Clock::time_point> deadline;
+  };
+
+  template<>
+  struct NetworkProcessor::Waiter<WaitPolicy::AtLeastOnce> {
+    yaclib::Promise<Response> p;
+    Clock::time_point updated_at;
+    std::optional<Clock::time_point> deadline;
+    Request request_copy;
+  };
+
+  struct TimeoutException : public std::exception {};
 }// namespace maelstrom::detail
