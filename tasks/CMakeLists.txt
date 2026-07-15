@@ -1,0 +1,8 @@
+add_subdirectory(1-echo)
+add_subdirectory(2-unique_ids)
+add_subdirectory(3a-broadcast)
+add_subdirectory(3b-broadcast)
+add_subdirectory(3c-broadcast)
+add_subdirectory(3d-broadcast)
+add_subdirectory(3e-broadcast)
+add_subdirectory(4-gcounter)

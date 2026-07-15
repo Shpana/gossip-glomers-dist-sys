@@ -1,5 +1,3 @@
-CUR_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST)))) 
-
 warmup:
 	cmake \
 		-DCMAKE_CXX_COMPILER=/usr/bin/clang++-19 \
@@ -8,23 +6,23 @@ warmup:
 		-DYACLIB_FLAGS=CORO \
 		-S . -B build/
 
-all-core: warmup
-	cmake --build build/ --target core
-all-echo: all-core
+all-maelstrom: warmup
+	cmake --build build/ --target maelstrom
+all-echo: all-maelstrom
 	cmake --build build/ --target 1-echo
-all-unique-ids: all-core
+all-unique-ids: all-maelstrom
 	cmake --build build/ --target 2-unique_ids
-all-broadcast-a: all-core
+all-broadcast-a: all-maelstrom
 	cmake --build build/ --target 3a-broadcast
-all-broadcast-b: all-core
+all-broadcast-b: all-maelstrom
 	cmake --build build/ --target 3b-broadcast
-all-broadcast-c: all-core
+all-broadcast-c: all-maelstrom
 	cmake --build build/ --target 3c-broadcast
-all-broadcast-d: all-core
+all-broadcast-d: all-maelstrom
 	cmake --build build/ --target 3d-broadcast
-all-broadcast-e: all-core
+all-broadcast-e: all-maelstrom
 	cmake --build build/ --target 3e-broadcast
-all-gcounter: all-core
+all-gcounter: all-maelstrom
 	cmake --build build/ --target 4-gcounter 
 
 maelstrom-echo: all-echo
@@ -43,19 +41,7 @@ maelstrom-broadcast-e: all-broadcast-e
 	maelstrom test -w broadcast --bin ./build/3e-broadcast/3e-broadcast --log-stderr --node-count 25 --time-limit 20 --rate 100 --latency 100 
 
 format:
-	find ./core/src/ -iname '*.cpp' | xargs clang-format -i
-	find ./core/include/ -iname '*.hpp' | xargs clang-format -i
-	find ./1-echo/src/ -iname '*.cpp' | xargs clang-format -i
-	find ./1-echo/include/ -iname '*.hpp' | xargs clang-format -i
-	find ./2-unique_ids/src/ -iname '*.cpp' | xargs clang-format -i
-	find ./2-unique_ids/include/ -iname '*.hpp' | xargs clang-format -i
-	find ./3a-broadcast/src/ -iname '*.cpp' | xargs clang-format -i
-	find ./3a-broadcast/include/ -iname '*.hpp' | xargs clang-format -i
-	find ./3b-broadcast/src/ -iname '*.cpp' | xargs clang-format -i
-	find ./3b-broadcast/include/ -iname '*.hpp' | xargs clang-format -i
-	find ./3c-broadcast/src/ -iname '*.cpp' | xargs clang-format -i
-	find ./3c-broadcast/include/ -iname '*.hpp' | xargs clang-format -i
-	find ./3d-broadcast/src/ -iname '*.cpp' | xargs clang-format -i
-	find ./3d-broadcast/include/ -iname '*.hpp' | xargs clang-format -i
-	find ./3e-broadcast/src/ -iname '*.cpp' | xargs clang-format -i
-	find ./3e-broadcast/include/ -iname '*.hpp' | xargs clang-format -i
+	find ./maelstrom/src/ -iname '*.cpp' | xargs clang-format -i
+	find ./maelstrom/include/ -iname '*.hpp' | xargs clang-format -i
+	find ./tasks/**/src/ -iname '*.cpp' | xargs clang-format -i
+	find ./tasks/**/include/ -iname '*.hpp' | xargs clang-format -i
