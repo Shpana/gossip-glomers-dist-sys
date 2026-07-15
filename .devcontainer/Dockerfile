@@ -13,8 +13,7 @@ RUN apt update && apt install -y \
     python3-pip \
     python3-venv \
     clang-format \
-    clang-tidy \
-    clang-19
+    clang-tidy
 
 # Install maelstrom
 RUN apt update && apt install -y \

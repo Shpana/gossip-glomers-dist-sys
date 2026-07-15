@@ -8,13 +8,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 FetchContent_Declare(fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG origin/main
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG origin/main
 )
 FetchContent_MakeAvailable(fmt)
 
 FetchContent_Declare(json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
 )
 FetchContent_MakeAvailable(json)
 
@@ -22,7 +22,7 @@ FetchContent_Declare(yaclib
   GIT_REPOSITORY https://github.com/YACLib/YACLib.git
   GIT_TAG main
 )
-set(YACLIB_FLAGS "CORO" CACHE STRING "yaclib build flags")
+set(YACLIB_FLAGS "CORO" CACHE STRING "")
 FetchContent_MakeAvailable(yaclib)
 
 # TODO(shpana): add configuration without tests
