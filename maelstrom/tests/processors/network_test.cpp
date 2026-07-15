@@ -1,11 +1,10 @@
 #include <gtest/gtest.h>
 
-#include <chrono>
 #include <thread>
 
 #include "detail/processors/network.hpp"
-#include "network/in_memory_transport.hpp"
 #include "network/messages.hpp"
+#include "network/transport/in_memory_transport.hpp"
 
 using namespace std::chrono_literals;
 
@@ -104,7 +103,7 @@ TEST_F(NetworkProcessorTest, SendAtLeastOnceNoTimeout) {
   }
 
   {
-    std::this_thread::sleep_for(10s); 
+    std::this_thread::sleep_for(10s);
 
     auto response = maelstrom::Response{.source = "n1",
                                         .destination = "n0",

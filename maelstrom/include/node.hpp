@@ -11,12 +11,11 @@
 #include "detail/processors/handlers.hpp"
 #include "detail/processors/network.hpp"
 #include "detail/processors/workers.hpp"
-#include "detail/sync/timer.hpp"
 #include "environment.hpp"
 #include "log/logging.hpp"
-#include "network/console_transport.hpp"
 #include "network/network.hpp"
-#include "network/transport.hpp"
+#include "network/transport/console_transport.hpp"
+#include "network/transport/transport.hpp"
 
 namespace maelstrom {
   template<typename State>
@@ -40,7 +39,6 @@ namespace maelstrom {
 
   private:
     yaclib::FairThreadPool cpu_pool_;
-    detail::Timer background_;
 
     std::shared_ptr<ITransport> transport_;
     Network network_;
@@ -51,11 +49,11 @@ namespace maelstrom {
 
   template<typename State>
   Node<State>::Node(std::shared_ptr<ITransport> transport)
-      : detail::NetworkProcessor{background_, *transport},
+      : detail::NetworkProcessor{*transport},
         detail::HandlersProcessor<State>{cpu_pool_, *transport, network_},
-        detail::WorkersProcessor<State>{background_, network_},
-        cpu_pool_{yaclib::FairThreadPool{2}}, background_{cpu_pool_},
-        transport_{std::move(transport)}, network_{*this} {}
+        detail::WorkersProcessor<State>{cpu_pool_, network_},
+        cpu_pool_{yaclib::FairThreadPool{2}}, transport_{std::move(transport)},
+        network_{*this} {}
 
   template<typename State>
   bool Node<State>::start() {
@@ -68,8 +66,6 @@ namespace maelstrom {
     }
 
     network_.start(env_.value());
-
-    background_.start();
 
     state_ = std::make_shared<State>();
     detail::NetworkProcessor::start();
@@ -148,8 +144,6 @@ namespace maelstrom {
 
     cpu_pool_.SoftStop();
     cpu_pool_.Wait();
-
-    background_.stop();
 
     detail::HandlersProcessor<State>::stop();
     detail::WorkersProcessor<State>::stop();

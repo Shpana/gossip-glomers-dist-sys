@@ -34,7 +34,7 @@ namespace maelstrom {
 
   private:
     Clock::duration period_;
-    Clock::time_point next_deadline_{};
+    std::atomic<Clock::time_point> next_deadline_{};
 
     enum struct ExecutionState { Idle = 0, InProgress };
 

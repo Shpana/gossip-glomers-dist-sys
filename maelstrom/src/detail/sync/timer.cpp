@@ -66,6 +66,7 @@ namespace maelstrom::detail {
         waiters_.erase(waiters_.begin());
 
         auto now = Clock::now();
+        LOG_DEBUG() << "Next deadline after " << now - deadline << std::endl;
         if (deadline < now) {
           submit(std::move(action));
           return;

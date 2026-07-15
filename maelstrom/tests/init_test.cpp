@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "network/in_memory_transport.hpp"
+#include "network/transport/in_memory_transport.hpp"
 #include "node.hpp"
 #include "utils/unit.hpp"
 

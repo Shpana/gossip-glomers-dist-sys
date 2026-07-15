@@ -11,14 +11,13 @@
 
 #include "detail/sync/timer.hpp"
 #include "environment.hpp"
-#include "network/transport.hpp"
 #include "routines/worker.hpp"
 
 namespace maelstrom::detail {
   template<typename State>
   class WorkersProcessor {
   public:
-    WorkersProcessor(Timer& timer, Network& network);
+    explicit WorkersProcessor(yaclib::IExecutor& executor, Network& network);
 
     template<IsWorker<State> Handler, typename... Args>
     void add(Args&&... args);
@@ -27,14 +26,13 @@ namespace maelstrom::detail {
     void stop();
 
   private:
-    void process();
+    void backgroundProcess();
 
   private:
     bool is_running_{false};
 
+    yaclib::IExecutor& executor_;
     std::thread assistant_;
-
-    Timer& timer_;
 
     Network& network_;
 
@@ -43,8 +41,9 @@ namespace maelstrom::detail {
   };
 
   template<typename State>
-  WorkersProcessor<State>::WorkersProcessor(Timer& timer, Network& network)
-      : timer_{timer}, network_{network} {}
+  WorkersProcessor<State>::WorkersProcessor(yaclib::IExecutor& executor,
+                                            Network& network)
+      : executor_{executor}, network_{network} {}
 
   template<typename State>
   template<IsWorker<State> Worker, typename... Args>
@@ -71,7 +70,11 @@ namespace maelstrom::detail {
       worker->start();
     }
 
-    timer_.submit([this]() { process(); });
+    assistant_ = std::thread{[this]() {
+      while (is_running_) {
+        backgroundProcess();
+      }
+    }};
   }
 
   template<typename State>
@@ -83,11 +86,15 @@ namespace maelstrom::detail {
         worker->stop();
         worker->stopInternal();
       }
+
+      if (assistant_.joinable()) {
+        assistant_.join();
+      }
     }
   }
 
   template<typename State>
-  void WorkersProcessor<State>::process() {
+  void WorkersProcessor<State>::backgroundProcess() {
     using Clock = WorkerBase<State>::Clock;
     using namespace std::chrono_literals;
 
@@ -99,35 +106,32 @@ namespace maelstrom::detail {
 
     auto now = Clock::now();
 
-    constexpr typename Clock::duration max_backoff{10s};
+    constexpr typename Clock::duration max_backoff{1s};
     typename Clock::time_point next_deadline = now + max_backoff;
 
     for (auto& [type, worker]: workers_) {
-      next_deadline = std::min(next_deadline, now + worker->period_);
+      next_deadline = std::min(next_deadline, worker->next_deadline_.load());
 
-      auto guess = ExecutionState::Idle;
-      if (!worker->exec_state_.compare_exchange_strong(
-              guess, ExecutionState::InProgress)) {
-        continue;
+      if (worker->next_deadline_.load() < now &&
+          worker->exec_state_.load() == ExecutionState::Idle) {
+        yaclib::Run(
+            executor_, [this, type, &worker]() mutable -> yaclib::Future<> {
+              try {
+                auto session = network_.makeSession();
+                co_await worker->process(std::move(session));
+              } catch (const std::exception& ex) {
+                LOG_ERROR() << fmt::format(
+                    "Exception occurs, when processing worker '{}', ex: {}\n",
+                    type, ex.what());
+              }
+
+              worker->next_deadline_.store(Clock::now() + worker->period_);
+              worker->exec_state_.store(ExecutionState::Idle);
+            });
       }
-
-      timer_.set(
-          worker->next_deadline_,
-          [this, type, &worker]() mutable -> yaclib::Future<> {
-            try {
-              auto session = network_.makeSession();
-              co_await worker->process(std::move(session));
-            } catch (const std::exception& ex) {
-              LOG_ERROR() << fmt::format(
-                  "Exception occurs, when processing worker '{}', ex: {}\n",
-                  type, ex.what());
-            }
-
-            worker->next_deadline_ = Clock::now() + worker->period_;
-            worker->exec_state_.store(ExecutionState::Idle);
-          });
     }
 
-    timer_.set(next_deadline, [this]() { process(); });
+    // TODO(shpana): wake up on stopping
+    std::this_thread::sleep_until(next_deadline);
   }
 }// namespace maelstrom::detail

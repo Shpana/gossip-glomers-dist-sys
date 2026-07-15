@@ -4,8 +4,8 @@
 
 #include <yaclib/async/make.hpp>
 
-#include "network/in_memory_transport.hpp"
 #include "network/messages.hpp"
+#include "network/transport/in_memory_transport.hpp"
 #include "node.hpp"
 #include "routines/handler.hpp"
 #include "utils/unit.hpp"

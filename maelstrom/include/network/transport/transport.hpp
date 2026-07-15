@@ -2,7 +2,7 @@
 
 #include <fmt/format.h>
 
-#include "messages.hpp"
+#include "network/messages.hpp"
 
 namespace maelstrom {
   // TODO(shpana): start, stop methods not for user!

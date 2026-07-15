@@ -4,7 +4,7 @@
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 
-#ifdef DEBUG
+#ifdef MAELSTROM_DEBUG
 #define LOG_DEBUG()                                                            \
   std::cerr << fmt::format("[DEBUG][{}]: ", std::chrono::system_clock::now())
 #else

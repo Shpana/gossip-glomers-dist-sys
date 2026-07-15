@@ -1,7 +1,7 @@
 #pragma once
 
 #include "detail/sync/queue.hpp"
-#include "network/transport.hpp"
+#include "network/transport/transport.hpp"
 
 namespace maelstrom {
   class InMemoryTransport final : public ITransport {

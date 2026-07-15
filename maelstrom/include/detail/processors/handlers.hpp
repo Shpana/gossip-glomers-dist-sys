@@ -12,7 +12,7 @@
 
 #include "environment.hpp"
 #include "network/network.hpp"
-#include "network/transport.hpp"
+#include "network/transport/transport.hpp"
 #include "routines/handler.hpp"
 
 namespace maelstrom::detail {
@@ -46,9 +46,7 @@ namespace maelstrom::detail {
   HandlersProcessor<State>::HandlersProcessor(yaclib::IExecutor& executor,
                                               ITransport& transport,
                                               Network& network)
-      : executor_{executor},  //
-        transport_{transport},//
-        network_{network} {}
+      : executor_{executor}, transport_{transport}, network_{network} {}
 
   template<typename State>
   template<IsHandler<State> Handler, typename... Args>

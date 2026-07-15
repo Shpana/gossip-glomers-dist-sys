@@ -2,7 +2,7 @@
 
 #include <atomic>
 
-#include "network/transport.hpp"
+#include "network/transport/transport.hpp"
 
 namespace maelstrom {
 
