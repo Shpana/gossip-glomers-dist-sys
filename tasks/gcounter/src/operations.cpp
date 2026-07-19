@@ -43,7 +43,7 @@ namespace tasks::gcounter {
     auto& cache = state_->cache;
 
     if (cache.enabled.load()) {
-      auto guard = cache.mtx.Guard();
+      auto guard = co_await cache.mtx.Guard();
 
       if (cache.valid_to.has_value() &&
           cache.valid_to.value() > State::Clock::now()) {
@@ -57,7 +57,7 @@ namespace tasks::gcounter {
     auto value = co_await read(session);
 
     if (cache.enabled.load()) {
-      auto guard = cache.mtx.Guard();
+      auto guard = co_await cache.mtx.Guard();
       cache.value = value;
       cache.valid_to = State::Clock::now() + cache_invalidation_timeout;
     }
