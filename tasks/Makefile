@@ -6,3 +6,4 @@ include $(CURDIR)/tasks/broadcast/part3/Makefile
 include $(CURDIR)/tasks/broadcast/part4/Makefile
 include $(CURDIR)/tasks/broadcast/part5/Makefile
 include $(CURDIR)/tasks/gcounter/Makefile
+include $(CURDIR)/tasks/kafka/part1/Makefile
