@@ -21,8 +21,8 @@ namespace maelstrom {
     virtual ~HandlerBase() = default;
 
     virtual void start() {}
-    virtual yaclib::Future<Response> handle(Network::Session&& session,
-                                            Request&& request) = 0;
+    virtual yaclib::Future<Response> handle(Network::Session session,
+                                            Request request) = 0;
     virtual void stop() {}
 
   protected:

@@ -9,7 +9,7 @@ namespace maelstrom {
     void start() override;
     void stop() override;
 
-    void send(Message&& message) override;
+    void send(Message message) override;
     std::optional<Message> recieve() override;
 
     void stopStreaming() override;
@@ -17,7 +17,7 @@ namespace maelstrom {
 
     [[nodiscard]] bool isRunning() const override;
 
-    void push(Message&& message);
+    void push(Message message);
     std::optional<Message> pop();
 
     // TODO(shpana): better name?

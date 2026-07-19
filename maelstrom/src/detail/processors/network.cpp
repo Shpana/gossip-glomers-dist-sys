@@ -1,9 +1,10 @@
 #include "detail/processors/network.hpp"
-#include "network/messages.hpp"
 
 #include <fmt/format.h>
 #include <yaclib/async/contract.hpp>
 #include <yaclib/util/result.hpp>
+
+#include "network/messages.hpp"
 
 using namespace std::chrono_literals;
 
@@ -29,7 +30,7 @@ namespace maelstrom::detail {
     }
   }
 
-  void NetworkProcessor::process(Response&& response) {
+  void NetworkProcessor::process(Response response) {
     if (processInternal(once_, response)) {
       return;
     }
@@ -59,34 +60,34 @@ namespace maelstrom::detail {
     return true;
   }
 
-  void NetworkProcessor::send(Request&& request) {
+  void NetworkProcessor::send(Request request) {
     callDetachedInternal(std::move(request));
   }
 
   void
-  NetworkProcessor::sendAtLeastOnce(Request&& request,
+  NetworkProcessor::sendAtLeastOnce(Request request,
                                     std::optional<Clock::duration> timeout) {
     std::ignore = callAtLeastOnceInternal(std::move(request), timeout);
   }
 
   yaclib::Future<Response>
-  NetworkProcessor::call(Request&& request,
+  NetworkProcessor::call(Request request,
                          std::optional<Clock::duration> timeout) {
     return callOnceInternal(std::move(request), timeout);
   }
 
   yaclib::Future<Response>
-  NetworkProcessor::callAtLeastOnce(Request&& request,
+  NetworkProcessor::callAtLeastOnce(Request request,
                                     std::optional<Clock::duration> timeout) {
     return callAtLeastOnceInternal(std::move(request), timeout);
   }
 
-  void NetworkProcessor::callDetachedInternal(Request&& request) {
+  void NetworkProcessor::callDetachedInternal(Request request) {
     transport_.send(std::move(request).toMessage());
   }
 
   yaclib::Future<Response>
-  NetworkProcessor::callOnceInternal(Request&& request,
+  NetworkProcessor::callOnceInternal(Request request,
                                      std::optional<Clock::duration> timeout) {
     auto id = request.message_id;
     transport_.send(std::move(request).toMessage());
@@ -109,7 +110,7 @@ namespace maelstrom::detail {
   }
 
   yaclib::Future<Response> NetworkProcessor::callAtLeastOnceInternal(
-      Request&& request, std::optional<Clock::duration> timeout) {
+      Request request, std::optional<Clock::duration> timeout) {
     auto id = request.message_id;
     auto request_copy = request;
     transport_.send(std::move(request).toMessage());

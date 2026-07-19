@@ -7,7 +7,7 @@ namespace maelstrom {
 
   void ConsoleTransport::stop() { is_running_.store(false); }
 
-  void ConsoleTransport::send(Message&& message) {
+  void ConsoleTransport::send(Message message) {
     if (!is_running_.load()) {
       LOG_ERROR() << "Try to send message by not running transport!\n";
       return;

@@ -46,7 +46,7 @@ namespace maelstrom {
   }
 
   nlohmann::json Message::toJson() && {
-    nlohmann::json json_message;
+    nlohmann::json json_message = nlohmann::json({});
     json_message["src"] = std::move(source);
     json_message["dest"] = std::move(destination);
     json_message["body"] = std::move(body);

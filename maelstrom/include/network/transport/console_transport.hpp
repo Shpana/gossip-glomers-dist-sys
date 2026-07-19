@@ -11,7 +11,7 @@ namespace maelstrom {
     void start() override;
     void stop() override;
 
-    void send(Message&& message) override;
+    void send(Message message) override;
     std::optional<Message> recieve() override;
 
     void stopStreaming() override;
