@@ -4,11 +4,20 @@ namespace maelstrom {
   Network::Network(detail::NetworkProcessor& processor)
       : processor_{processor} {}
 
-  void Network::start(Environment env) { env_ = std::move(env); }
+  void Network::start(Environment env) {
+    env_ = std::move(env);
+
+    jitter_ =
+        std::stoull(std::string{env_.node_id.begin() + 1, env_.node_id.end()});
+  }
 
   void Network::stop() {}
 
   Network::Session Network::makeSession() { return Session{*this}; }
+
+  std::uint64_t Network::generateNextId() {
+    return 1000 * previous_id_.fetch_add(1) + jitter_;
+  }
 
   Network::Session::Session(Network& network) : network_{network} {}
 
@@ -48,6 +57,6 @@ namespace maelstrom {
                    .destination = std::move(destination),
                    .type = std::move(type),
                    .body = std::move(body),
-                   .message_id = network_.previous_id_.fetch_add(1)};
+                   .message_id = network_.generateNextId()};
   }
 }// namespace maelstrom

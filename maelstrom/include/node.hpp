@@ -32,9 +32,8 @@ namespace maelstrom {
     using detail::WorkersProcessor<State>::add;
 
   private:
-    bool start();
     bool loadEnvironment();
-
+    bool start();
     void stop();
 
   private:
@@ -52,29 +51,8 @@ namespace maelstrom {
       : detail::NetworkProcessor{*transport},
         detail::HandlersProcessor<State>{cpu_pool_, *transport, network_},
         detail::WorkersProcessor<State>{cpu_pool_, network_},
-        cpu_pool_{yaclib::FairThreadPool{2}}, transport_{std::move(transport)},
+        cpu_pool_{yaclib::FairThreadPool{4}}, transport_{std::move(transport)},
         network_{*this} {}
-
-  template<typename State>
-  bool Node<State>::start() {
-    LOG_INFO() << "Starting!\n";
-
-    transport_->start();
-
-    if (!loadEnvironment()) {
-      return false;
-    }
-
-    network_.start(env_.value());
-
-    state_ = std::make_shared<State>();
-    detail::NetworkProcessor::start();
-    detail::HandlersProcessor<State>::start(env_.value(), state_);
-    detail::WorkersProcessor<State>::start(env_.value(), state_);
-
-    LOG_INFO() << "Successfully started!\n";
-    return true;
-  }
 
   template<typename State>
   bool Node<State>::loadEnvironment() {
@@ -108,6 +86,28 @@ namespace maelstrom {
                         body["node_ids"].get<std::vector<std::string>>()});
 
     transport_->send(std::move(init_request.value()).toResponse().toMessage());
+    LOG_INFO() << "Successfully load environment!\n";
+    return true;
+  }
+
+  template<typename State>
+  bool Node<State>::start() {
+    LOG_INFO() << "Starting!\n";
+
+    transport_->start();
+
+    if (!loadEnvironment()) {
+      return false;
+    }
+
+    network_.start(env_.value());
+
+    state_ = std::make_shared<State>();
+    detail::NetworkProcessor::start();
+    detail::HandlersProcessor<State>::start(env_.value(), state_);
+    detail::WorkersProcessor<State>::start(env_.value(), state_);
+
+    LOG_INFO() << "Successfully started!\n";
     return true;
   }
 

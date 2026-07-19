@@ -71,7 +71,6 @@ namespace maelstrom {
   struct Error {
     std::string source;
     std::string destination;
-    std::string type;
     ErrorCode code;
     std::string what;
     nlohmann::json body;

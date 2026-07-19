@@ -20,7 +20,7 @@ namespace maelstrom {
     [[nodiscard]] bool isRunning() const override;
 
   private:
-    std::mutex mtx_{};
+    std::mutex out_mtx_{};
     std::atomic<bool> is_running_{false};
     std::atomic<bool> end_of_stream_{false};
   };

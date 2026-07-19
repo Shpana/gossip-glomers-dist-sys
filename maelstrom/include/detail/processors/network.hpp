@@ -4,7 +4,6 @@
 #include <yaclib/async/promise.hpp>
 #include <yaclib/exe/executor.hpp>
 
-#include "detail/sync/timer.hpp"
 #include "network/messages.hpp"
 #include "network/transport/transport.hpp"
 

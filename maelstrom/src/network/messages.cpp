@@ -1,5 +1,7 @@
 #include "network/messages.hpp"
 
+#include "log/logging.hpp"
+
 namespace maelstrom {
   namespace {
     constexpr std::string_view error_type = "error";
@@ -90,10 +92,9 @@ namespace maelstrom {
   Error Request::toError(ErrorCode code, std::string what) && {
     return Error{.source = std::move(destination),
                  .destination = std::move(source),
-                 .type = std::string{error_type},
                  .code = code,
                  .what = std::move(what),
-                 .body = std::move(body),
+                 .body = nlohmann::json({}),
                  .in_reply_to = message_id};
   }
 
@@ -107,8 +108,7 @@ namespace maelstrom {
   }
 
   bool Response::isError() const {
-    return type == error_type && body.contains("error") &&
-           body.contains("text");
+    return type == error_type && body.contains("code") && body.contains("text");
   }
 
   std::optional<Error> Response::toError() && {
@@ -118,20 +118,19 @@ namespace maelstrom {
 
     return Error{.source = std::move(source),
                  .destination = std::move(destination),
-                 .type = std::string{error_type},
-                 .code = body["error"].get<ErrorCode>(),
+                 .code = body["code"].get<ErrorCode>(),
                  .what = std::move(body["text"].get<std::string>()),
                  .body = std::move(body),
                  .in_reply_to = in_reply_to};
   }
 
   Response Error::toResponse() && {
-    body["error"] = code;
+    body["code"] = code;
     body["text"] = std::move(what);
 
     return Response{.source = std::move(source),
                     .destination = std::move(destination),
-                    .type = std::move(type),
+                    .type = std::string{error_type},
                     .body = std::move(body),
                     .in_reply_to = in_reply_to};
   }

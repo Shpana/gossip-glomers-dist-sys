@@ -11,6 +11,7 @@
 #include <yaclib/exe/executor.hpp>
 
 #include "environment.hpp"
+#include "log/logging.hpp"
 #include "network/network.hpp"
 #include "network/transport/transport.hpp"
 #include "routines/handler.hpp"
