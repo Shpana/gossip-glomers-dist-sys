@@ -27,16 +27,16 @@ namespace maelstrom::detail {
     void start();
     void stop();
 
-    void process(Response&& response);
+    void process(Response response);
 
-    void send(Request&& request);
-    void sendAtLeastOnce(Request&& request,
+    void send(Request request);
+    void sendAtLeastOnce(Request request,
                          std::optional<Clock::duration> timeout = std::nullopt);
     yaclib::Future<Response>
-    call(Request&& request,
+    call(Request request,
          std::optional<Clock::duration> timeout = std::nullopt);
     yaclib::Future<Response>
-    callAtLeastOnce(Request&& request,
+    callAtLeastOnce(Request request,
                     std::optional<Clock::duration> timeout = std::nullopt);
 
   private:
@@ -45,12 +45,12 @@ namespace maelstrom::detail {
 
     // TODO(shpana): use cancellation tokens?
 
-    void callDetachedInternal(Request&& request);
+    void callDetachedInternal(Request request);
     yaclib::Future<Response>
-    callOnceInternal(Request&& request, std::optional<Clock::duration> timeout);
+    callOnceInternal(Request request, std::optional<Clock::duration> timeout);
     // TODO(shpana): make exponential backoffs strategy
     yaclib::Future<Response>
-    callAtLeastOnceInternal(Request&& request,
+    callAtLeastOnceInternal(Request request,
                             std::optional<Clock::duration> timeout);
 
     void backgroundUpdate();

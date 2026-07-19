@@ -1,9 +1,14 @@
 include $(CURDIR)/tasks/echo/Makefile
+
 include $(CURDIR)/tasks/unique_ids/Makefile
+
 include $(CURDIR)/tasks/broadcast/part1/Makefile
 include $(CURDIR)/tasks/broadcast/part2/Makefile
 include $(CURDIR)/tasks/broadcast/part3/Makefile
 include $(CURDIR)/tasks/broadcast/part4/Makefile
 include $(CURDIR)/tasks/broadcast/part5/Makefile
+
 include $(CURDIR)/tasks/gcounter/Makefile
+
 include $(CURDIR)/tasks/kafka/part1/Makefile
+include $(CURDIR)/tasks/kafka/part2/Makefile

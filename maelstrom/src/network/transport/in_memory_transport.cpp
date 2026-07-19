@@ -7,7 +7,7 @@ namespace maelstrom {
 
   void InMemoryTransport::stop() { is_running_.store(false); }
 
-  void InMemoryTransport::send(Message&& message) {
+  void InMemoryTransport::send(Message message) {
     if (!is_running_.load()) {
       LOG_ERROR() << "Try to send message by not running transport!\n";
       return;
@@ -33,7 +33,7 @@ namespace maelstrom {
     return is_running_.load();
   }
 
-  void InMemoryTransport::push(Message&& message) {
+  void InMemoryTransport::push(Message message) {
     if (!is_running_.load()) {
       LOG_ERROR() << "Try to push message to not running transport!\n";
       return;

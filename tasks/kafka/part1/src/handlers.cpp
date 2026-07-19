@@ -8,8 +8,8 @@ namespace tasks::kafka::part1 {
   }// namespace
 
   yaclib::Future<maelstrom::Response>
-  SendHandler::handle(maelstrom::Network::Session&& session,
-                      maelstrom::Request&& request) {
+  SendHandler::handle(maelstrom::Network::Session session,
+                      maelstrom::Request request) {
     auto key = request.body["key"].get<std::string>();
     auto message = request.body["msg"].get<Message>();
 
@@ -26,8 +26,8 @@ namespace tasks::kafka::part1 {
   }
 
   yaclib::Future<maelstrom::Response>
-  PollHandler::handle(maelstrom::Network::Session&& session,
-                      maelstrom::Request&& request) {
+  PollHandler::handle(maelstrom::Network::Session session,
+                      maelstrom::Request request) {
     auto offsets = request.body["offsets"].get<std::map<std::string, Offset>>();
 
     auto body = nlohmann::json({});
@@ -36,12 +36,16 @@ namespace tasks::kafka::part1 {
     {
       auto guard = co_await state_->mtx.GuardShared();
 
-      for (auto&& [key, offset_bound]: offsets) {
+      for (const auto& [key, offset_bound]: offsets) {
         if (!state_->logs.contains(key)) {
           continue;
         }
 
         const auto& log = state_->logs[key];
+
+        if (log.lower_bound(offset_bound) == log.end()) {
+          continue;
+        }
 
         body["msgs"][key] = nlohmann::json::array({});
         for (const auto& [offset, message]:
@@ -56,25 +60,24 @@ namespace tasks::kafka::part1 {
   }
 
   yaclib::Future<maelstrom::Response>
-  CommitOffsetsHandler::handle(maelstrom::Network::Session&& session,
-                               maelstrom::Request&& request) {
+  CommitOffsetsHandler::handle(maelstrom::Network::Session session,
+                               maelstrom::Request request) {
     auto offsets = request.body["offsets"].get<std::map<std::string, Offset>>();
 
     {
       auto guard = co_await state_->mtx.Guard();
 
-      for (auto&& [key, offset]: offsets) {
-        state_->committed[key] = std::max(offset, state_->committed[key]);
+      for (const auto& [key, offset]: offsets) {
+        state_->committed[key] = offset;
       }
     }
 
     co_return std::move(request).toResponse();
   }
 
-
   yaclib::Future<maelstrom::Response>
-  ListCommittedOffsetsHandler::handle(maelstrom::Network::Session&& session,
-                                      maelstrom::Request&& request) {
+  ListCommittedOffsetsHandler::handle(maelstrom::Network::Session session,
+                                      maelstrom::Request request) {
     auto keys = request.body["keys"].get<std::vector<std::string>>();
 
     auto body = nlohmann::json({});
@@ -83,7 +86,7 @@ namespace tasks::kafka::part1 {
     {
       auto guard = co_await state_->mtx.GuardShared();
 
-      for (auto&& key: keys) {
+      for (const auto& key: keys) {
         if (!state_->committed.contains(key)) {
           continue;
         }

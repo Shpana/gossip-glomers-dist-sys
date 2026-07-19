@@ -51,7 +51,7 @@ namespace maelstrom {
       : detail::NetworkProcessor{*transport},
         detail::HandlersProcessor<State>{cpu_pool_, *transport, network_},
         detail::WorkersProcessor<State>{cpu_pool_, network_},
-        cpu_pool_{yaclib::FairThreadPool{4}}, transport_{std::move(transport)},
+        cpu_pool_{yaclib::FairThreadPool{1}}, transport_{std::move(transport)},
         network_{*this} {}
 
   template<typename State>

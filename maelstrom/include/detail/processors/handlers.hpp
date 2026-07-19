@@ -29,7 +29,7 @@ namespace maelstrom::detail {
     void start(Environment env, std::shared_ptr<State> state);
     void stop();
 
-    void process(Request&& request);
+    void process(Request request);
 
   private:
     bool is_running_{false};
@@ -88,8 +88,8 @@ namespace maelstrom::detail {
   }
 
   template<typename State>
-  void HandlersProcessor<State>::process(Request&& request) {
-    const auto& type = request.type;
+  void HandlersProcessor<State>::process(Request request) {
+    auto type = request.type;
 
     auto it = handlers_.find(type);
     if (it == handlers_.end()) {
@@ -105,10 +105,9 @@ namespace maelstrom::detail {
             auto session = network_.makeSession();
 
             const auto& handler = it->second;
-            auto result = co_await handler->handle(std::move(session),
-                                                   std::move(request));
+            auto response = co_await handler->handle(std::move(session),
+                                                     std::move(request));
 
-            auto response = std::move(result);
             transport_.send(std::move(response).toMessage());
           } catch (const std::exception& ex) {
             LOG_ERROR() << fmt::format(
