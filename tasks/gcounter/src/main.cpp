@@ -1,10 +1,10 @@
 #include "node.hpp"
 
-#include "ops.hpp"
+#include "operations.hpp"
 
 int main() {
-  maelstrom::Node<maelstrom::Unit> node{};
-  node.add<ds::gcounter::AddHandler>();
-  node.add<ds::gcounter::ReadHandler>();
+  maelstrom::Node<tasks::gcounter::State> node{};
+  node.add<tasks::gcounter::AddHandler>();
+  node.add<tasks::gcounter::ReadHandler>();
   node.run();
 }

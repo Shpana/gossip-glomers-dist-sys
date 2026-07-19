@@ -1,4 +1,5 @@
 #include "detail/processors/network.hpp"
+#include "network/messages.hpp"
 
 #include <fmt/format.h>
 #include <yaclib/async/contract.hpp>
@@ -177,7 +178,13 @@ namespace maelstrom::detail {
                                                Clock::time_point now) {
     for (auto& [id, waiter]: waiters) {
       if (waiter.deadline.has_value() && waiter.deadline.value() < now) {
-        std::move(waiter.p).Set(std::make_exception_ptr(TimeoutException{}));
+        std::move(waiter.p).Set(Error{.source = "unknown",
+                                      .destination = "unknown",
+                                      .code = ErrorCode::Timeout,
+                                      .what = "Timeout",
+                                      .body = nlohmann::json({}),
+                                      .in_reply_to = id}
+                                    .toResponse());
       }
     }
 

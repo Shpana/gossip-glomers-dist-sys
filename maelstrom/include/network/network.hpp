@@ -24,9 +24,14 @@ namespace maelstrom {
     [[nodiscard]] Session makeSession();
 
   private:
+    [[nodiscard]] std::uint64_t generateNextId();
+
+  private:
     detail::NetworkProcessor& processor_;
     Environment env_;
+
     std::atomic<std::uint64_t> previous_id_{0};
+    std::uint64_t jitter_;
   };
 
   // User-API wrapper for interaction with network

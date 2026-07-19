@@ -106,15 +106,14 @@ namespace maelstrom::detail {
 
     auto now = Clock::now();
 
-    constexpr typename Clock::duration max_backoff{1s};
-    typename Clock::time_point next_deadline = now + max_backoff;
-
     for (auto& [type, worker]: workers_) {
-      next_deadline = std::min(next_deadline, worker->next_deadline_.load());
+      auto guess = ExecutionState::Idle;
 
       if (worker->next_deadline_.load() < now &&
-          worker->exec_state_.load() == ExecutionState::Idle) {
-        yaclib::Run(
+          worker->exec_state_.compare_exchange_strong(
+              guess, ExecutionState::InProgress)) {
+
+        std::ignore = yaclib::Run(
             executor_, [this, type, &worker]() mutable -> yaclib::Future<> {
               try {
                 auto session = network_.makeSession();
@@ -125,13 +124,13 @@ namespace maelstrom::detail {
                     type, ex.what());
               }
 
-              worker->next_deadline_.store(Clock::now() + worker->period_);
               worker->exec_state_.store(ExecutionState::Idle);
+              worker->next_deadline_.store(Clock::now() + worker->period_);
             });
       }
     }
 
     // TODO(shpana): wake up on stopping
-    std::this_thread::sleep_until(next_deadline);
+    std::this_thread::sleep_for(100ms);
   }
 }// namespace maelstrom::detail

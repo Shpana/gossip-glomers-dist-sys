@@ -18,10 +18,8 @@ namespace maelstrom {
     LOG_DEBUG() << "<- " << json << std::endl;
 
     {
-      std::lock_guard guard{mtx_};
-      std::stringstream ss;
-      ss << json << "\n";
-      std::cout << std::move(ss).str();
+      std::lock_guard guard{out_mtx_};
+      std::cout << json << std::endl;
     }
   }
 
@@ -32,10 +30,7 @@ namespace maelstrom {
     }
 
     std::string input;
-    {
-      std::lock_guard guard{mtx_};
-      std::getline(std::cin, input);
-    }
+    std::getline(std::cin, input);
     if (input.empty()) {
       end_of_stream_.store(true);
       return std::nullopt;
