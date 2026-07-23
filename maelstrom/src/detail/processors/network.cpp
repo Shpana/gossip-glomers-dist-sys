@@ -10,7 +10,7 @@ namespace maelstrom::detail {
 namespace {
 
 using namespace std::chrono_literals;
-constexpr NetworkProcessor::Clock::duration kRepeatThreshold{500ms};
+constexpr NetworkProcessor::Clock::duration kRepeatThreshold{1s};
 
 } // namespace
 
@@ -62,13 +62,22 @@ bool NetworkProcessor::ProcessInternal(Waiters<P> &waiters,
   return true;
 }
 
-void NetworkProcessor::Send(Request request) {
+void NetworkProcessor::SendDetached(Request request) {
   CallDetachedInternal(std::move(request));
 }
 
-void NetworkProcessor::SendAtLeastOnce(Request request,
-                                       std::optional<Clock::duration> timeout) {
-  std::ignore = CallAtLeastOnceInternal(std::move(request), timeout);
+yaclib::Future<>
+NetworkProcessor::Send(Request request,
+                       std::optional<Clock::duration> timeout) {
+  return CallOnceInternal(std::move(request), timeout) //
+    .ThenInline([](auto &&) {});
+}
+
+yaclib::Future<>
+NetworkProcessor::SendAtLeastOnce(Request request,
+                                  std::optional<Clock::duration> timeout) {
+  return CallAtLeastOnceInternal(std::move(request), timeout)
+    .ThenInline([](auto &&) {});
 }
 
 yaclib::Future<Response>

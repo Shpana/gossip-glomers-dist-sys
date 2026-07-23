@@ -50,9 +50,14 @@ public:
 
   ~Session() = default;
 
-  void Send(std::string type, std::string destination, nlohmann::json body);
-  void SendAtLeastOnce(std::string type, std::string destination,
-                       nlohmann::json body);
+  void SendDetached(std::string type, std::string destination,
+                    nlohmann::json body);
+  yaclib::Future<>
+  Send(std::string type, std::string destination, nlohmann::json body,
+       std::optional<Network::Clock::duration> timeout = std::nullopt);
+  yaclib::Future<> SendAtLeastOnce(
+    std::string type, std::string destination, nlohmann::json body,
+    std::optional<Network::Clock::duration> timeout = std::nullopt);
   yaclib::Future<Response>
   Call(std::string type, std::string destination, nlohmann::json body,
        std::optional<Network::Clock::duration> timeout = std::nullopt);
@@ -61,9 +66,15 @@ public:
     std::optional<Network::Clock::duration> timeout = std::nullopt);
 
   template <typename Handler>
-  void Send(std::string destination, nlohmann::json body);
+  void SendDetached(std::string destination, nlohmann::json body);
   template <typename Handler>
-  void SendAtLeastOnce(std::string destination, nlohmann::json body);
+  yaclib::Future<>
+  Send(std::string destination, nlohmann::json body,
+       std::optional<Network::Clock::duration> timeout = std::nullopt);
+  template <typename Handler>
+  yaclib::Future<> SendAtLeastOnce(
+    std::string destination, nlohmann::json body,
+    std::optional<Network::Clock::duration> timeout = std::nullopt);
   template <typename Handler>
   yaclib::Future<Response>
   Call(std::string destination, nlohmann::json body,
@@ -84,14 +95,24 @@ private:
 } // namespace maelstrom
 
 template <typename Handler>
-void maelstrom::Network::Session::Send(std::string destination,
-                                       nlohmann::json body) {
-  Send(std::string{Handler::kType}, std::move(destination), std::move(body));
+void maelstrom::Network::Session::SendDetached(std::string destination,
+                                               nlohmann::json body) {
+  return SendDetached(std::string{Handler::kType}, std::move(destination),
+                      std::move(body));
 }
 
 template <typename Handler>
-void maelstrom::Network::Session::SendAtLeastOnce(std::string destination,
-                                                  nlohmann::json body) {
+yaclib::Future<> maelstrom::Network::Session::Send(
+  std::string destination, nlohmann::json body,
+  std::optional<Network::Clock::duration> timeout) {
+  return Send(std::string{Handler::kType}, std::move(destination),
+              std::move(body), timeout);
+}
+
+template <typename Handler>
+yaclib::Future<> maelstrom::Network::Session::SendAtLeastOnce(
+  std::string destination, nlohmann::json body,
+  std::optional<Network::Clock::duration> timeout) {
   return SendAtLeastOnce(std::string{Handler::kType}, std::move(destination),
                          std::move(body));
 }

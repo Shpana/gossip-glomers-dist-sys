@@ -29,9 +29,12 @@ public:
 
   void Process(Response response);
 
-  void Send(Request request);
-  void SendAtLeastOnce(Request request,
-                       std::optional<Clock::duration> timeout = std::nullopt);
+  void SendDetached(Request request);
+  yaclib::Future<> Send(Request request,
+                        std::optional<Clock::duration> timeout = std::nullopt);
+  yaclib::Future<>
+  SendAtLeastOnce(Request request,
+                  std::optional<Clock::duration> timeout = std::nullopt);
   yaclib::Future<Response>
   Call(Request request, std::optional<Clock::duration> timeout = std::nullopt);
   yaclib::Future<Response>
