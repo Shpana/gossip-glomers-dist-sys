@@ -1,13 +1,11 @@
-#include "node.hpp"
+#include "handlers.hpp"
 
-#include "handlers/broadcast.hpp"
-#include "handlers/read.hpp"
-#include "handlers/topology.hpp"
+#include <maelstrom/node.hpp>
 
 int main() {
-  maelstrom::Node<ds::broadcast::State> node{};
-  node.add<ds::broadcast::BroadcastHandler>();
-  node.add<ds::broadcast::ReadHandler>();
-  node.add<ds::broadcast::TopologyHandler>();
-  node.run();
+  maelstrom::Node<tasks::broadcast::part2::State> node{};
+  node.Add<tasks::broadcast::part2::BroadcastHandler>();
+  node.Add<tasks::broadcast::part2::ReadHandler>();
+  node.Add<tasks::broadcast::part2::TopologyHandler>();
+  node.Run();
 }

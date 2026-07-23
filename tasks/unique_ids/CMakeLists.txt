@@ -1,5 +1,5 @@
 add_executable(unique-ids
-    src/main.cpp
+  src/main.cpp
 )
 
 target_include_directories(unique-ids PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

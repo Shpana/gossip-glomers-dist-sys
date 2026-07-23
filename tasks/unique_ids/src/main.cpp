@@ -1,9 +1,9 @@
-#include "node.hpp"
-
 #include "unique_id.hpp"
+
+#include <maelstrom/node.hpp>
 
 int main() {
   maelstrom::Node<maelstrom::Unit> node;
-  node.add<ds::unique_id::GenerateHandler>();
-  node.run();
+  node.Add<tasks::unique_id::GenerateHandler>();
+  node.Run();
 }

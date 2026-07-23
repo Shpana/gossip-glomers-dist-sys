@@ -1,62 +1,64 @@
-#include "network/network.hpp"
+#include <maelstrom/network/network.hpp>
 
 namespace maelstrom {
-  Network::Network(detail::NetworkProcessor& processor)
-      : processor_{processor} {}
 
-  void Network::start(Environment env) {
-    env_ = std::move(env);
+Network::Network(detail::NetworkProcessor &processor) : processor_{processor} {}
 
-    jitter_ =
-        std::stoull(std::string{env_.node_id.begin() + 1, env_.node_id.end()});
-  }
+void Network::Start(Environment env) {
+  env_ = std::move(env);
 
-  void Network::stop() {}
+  auto raw_node_id = std::string{env_.node_id.begin() + 1, env_.node_id.end()};
+  jitter_ = std::stoull(raw_node_id);
+}
 
-  Network::Session Network::makeSession() { return Session{*this}; }
+void Network::Stop() {}
 
-  std::uint64_t Network::generateNextId() {
-    return 1000 * previous_id_.fetch_add(1) + jitter_;
-  }
+Network::Session Network::MakeSession() {
+  return Session{*this};
+}
 
-  Network::Session::Session(Network& network) : network_{network} {}
+std::uint64_t Network::GenerateNextId() {
+  return 1000 * previous_id_.fetch_add(1) + jitter_;
+}
 
-  void Network::Session::send(std::string type, std::string destination,
-                              nlohmann::json body) {
-    network_.processor_.send(
-        makeRequest(std::move(type), std::move(destination), std::move(body)));
-  }
+Network::Session::Session(Network &network) : network_{network} {}
 
-  void Network::Session::sendAtLeastOnce(std::string type,
-                                         std::string destination,
-                                         nlohmann::json body) {
-    network_.processor_.sendAtLeastOnce(
-        makeRequest(std::move(type), std::move(destination), std::move(body)));
-  }
+void Network::Session::Send(std::string type, std::string destination,
+                            nlohmann::json body) {
+  network_.processor_.Send(
+    MakeRequest(std::move(type), std::move(destination), std::move(body)));
+}
 
-  yaclib::Future<Response> Network::Session::Session::call(
-      std::string type, std::string destination, nlohmann::json body,
-      std::optional<Network::Clock::duration> timeout) {
-    return network_.processor_.call(
-        makeRequest(std::move(type), std::move(destination), std::move(body)),
-        timeout);
-  }
+void Network::Session::SendAtLeastOnce(std::string type,
+                                       std::string destination,
+                                       nlohmann::json body) {
+  network_.processor_.SendAtLeastOnce(
+    MakeRequest(std::move(type), std::move(destination), std::move(body)));
+}
 
-  yaclib::Future<Response> Network::Session::Session::callAtLeastOnce(
-      std::string type, std::string destination, nlohmann::json body,
-      std::optional<Network::Clock::duration> timeout) {
-    return network_.processor_.callAtLeastOnce(
-        makeRequest(std::move(type), std::move(destination), std::move(body)),
-        timeout);
-  }
+yaclib::Future<Response> Network::Session::Session::Call(
+  std::string type, std::string destination, nlohmann::json body,
+  std::optional<Network::Clock::duration> timeout) {
+  return network_.processor_.Call(
+    MakeRequest(std::move(type), std::move(destination), std::move(body)),
+    timeout);
+}
 
-  Request Network::Session::makeRequest(std::string type,
-                                        std::string destination,
-                                        nlohmann::json body) const {
-    return Request{.source = network_.env_.node_id,
-                   .destination = std::move(destination),
-                   .type = std::move(type),
-                   .body = std::move(body),
-                   .message_id = network_.generateNextId()};
-  }
-}// namespace maelstrom
+yaclib::Future<Response> Network::Session::Session::CallAtLeastOnce(
+  std::string type, std::string destination, nlohmann::json body,
+  std::optional<Network::Clock::duration> timeout) {
+  return network_.processor_.CallAtLeastOnce(
+    MakeRequest(std::move(type), std::move(destination), std::move(body)),
+    timeout);
+}
+
+Request Network::Session::MakeRequest(std::string type, std::string destination,
+                                      nlohmann::json body) const {
+  return Request{.source = network_.env_.node_id,
+                 .destination = std::move(destination),
+                 .type = std::move(type),
+                 .body = std::move(body),
+                 .message_id = network_.GenerateNextId()};
+}
+
+} // namespace maelstrom

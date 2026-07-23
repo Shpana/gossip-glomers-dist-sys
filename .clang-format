@@ -1,66 +1,36 @@
-BasedOnStyle: LLVM
-AccessModifierOffset: -2
-AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: None
-AlignOperands: Align
-AllowAllArgumentsOnNextLine: false
-AllowAllConstructorInitializersOnNextLine: true 
-AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortLambdasOnASingleLine: Inline
+AllowShortFunctionsOnASingleLine: Empty
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: All
+AllowShortEnumsOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: Never
-AllowShortLambdasOnASingleLine: Inline 
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterReturnType: None
-AlwaysBreakTemplateDeclarations: Yes
-BreakBeforeBraces: Custom
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
+LambdaBodyIndentation: Signature
 BraceWrapping:
-  AfterCaseLabel: false
-  AfterClass: false
-  AfterControlStatement: Never
-  AfterEnum: false
-  AfterFunction: false
-  AfterNamespace: false
-  AfterUnion: false
-  BeforeCatch: false
-  BeforeElse: false
-  IndentBraces: false
-  SplitEmptyFunction: false
-  SplitEmptyRecord: true
-BreakBeforeBinaryOperators: None
-BreakBeforeTernaryOperators: true
-BreakConstructorInitializers: BeforeColon
-BreakInheritanceList: BeforeColon
-ColumnLimit: 80
-CompactNamespaces: false
-ContinuationIndentWidth: 4
-IndentCaseLabels: true
-IndentPPDirectives: None
-IndentWidth: 2
-KeepEmptyLinesAtTheStartOfBlocks: true
-MaxEmptyLinesToKeep: 2
-NamespaceIndentation: All
-ObjCSpaceAfterProperty: false
-ObjCSpaceBeforeProtocolList: true
-DerivePointerAlignment: false
-PointerAlignment: Left
-ReflowComments: false
-SpaceAfterCStyleCast: true
-SpaceAfterLogicalNot: false
-SpaceAfterTemplateKeyword: false
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeCpp11BracedList: false
-SpaceBeforeCtorInitializerColon: true
-SpaceBeforeInheritanceColon: true
-SpaceBeforeParens: ControlStatements
-SpaceBeforeRangeBasedForLoopColon: false
-SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 0
-SpacesInAngles: false
-SpacesInCStyleCastParentheses: false
-SpacesInContainerLiterals: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-TabWidth: 2
-UseTab: Never
+  BeforeLambdaBody: true
+AlignEscapedNewlines: Right
+ContinuationIndentWidth: 2
+ConstructorInitializerIndentWidth: 2
+AlignAfterOpenBracket: Align
+
+IncludeCategories:
+  - Regex: '^".*"$'              # relative includes
+    Priority: 10
+  - Regex: '^<[[:alpha:]_\/]+>$' # STL
+    Priority: 15 
+  - Regex: '^<yaclib\/.*>$'      # yaclib library public includes
+    Priority: 16 
+  - Regex: '^<nlohmann\/.*>$'    # nlohmann library public includes
+    Priority: 16 
+  - Regex: '^<fmt\/.*>$'         # fmt library public includes
+    Priority: 16 
+  - Regex: '^<.*\.hpp>$'         # our library private includes
+    Priority: 20
+  - Regex: '^<maelstrom\/.*>$'   # our library public includes
+    Priority: 30
+  - Regex: '.*'                  # other libraries
+    Priority: 50
+IncludeBlocks: Regroup
+IndentPPDirectives: AfterHash

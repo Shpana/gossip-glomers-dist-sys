@@ -1,10 +1,11 @@
-#include "node.hpp"
-
 #include "operations.hpp"
 
+#include <maelstrom/node.hpp>
+
 int main() {
+  // TODO(shpana): sometimes read timeouts
   maelstrom::Node<tasks::gcounter::State> node{};
-  node.add<tasks::gcounter::AddHandler>();
-  node.add<tasks::gcounter::ReadHandler>();
-  node.run();
+  node.Add<tasks::gcounter::AddHandler>();
+  node.Add<tasks::gcounter::ReadHandler>();
+  node.Run();
 }

@@ -2,20 +2,22 @@
 
 #include <yaclib/async/make.hpp>
 
-#include "routines/handler.hpp"
-#include "utils/unit.hpp"
+#include <maelstrom/routines/handler.hpp>
+#include <maelstrom/utils/unit.hpp>
 
-namespace ds::echo {
-  class EchoHandler final : public maelstrom::HandlerBase<maelstrom::Unit> {
-  public:
-    static constexpr std::string_view type = "echo";
+namespace tasks::echo {
 
-    yaclib::Future<maelstrom::Response>
-    handle([[maybe_unused]] maelstrom::Network::Session&& session,
-           maelstrom::Request&& request) override {
-      auto body = nlohmann::json({});
-      body["echo"] = request.body["echo"];
-      return yaclib::MakeFuture(std::move(request).toResponse(std::move(body)));
-    }
-  };
-}// namespace ds::echo
+class EchoHandler final : public maelstrom::HandlerBase<maelstrom::Unit> {
+public:
+  static constexpr std::string_view kType = "echo";
+
+  yaclib::Future<maelstrom::Response>
+  Handle(maelstrom::Network::Session session,
+         maelstrom::Request request) override {
+    auto body = nlohmann::json({});
+    body["echo"] = request.body["echo"];
+    return yaclib::MakeFuture(std::move(request).ToResponse(std::move(body)));
+  }
+};
+
+} // namespace tasks::echo

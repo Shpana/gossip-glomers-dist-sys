@@ -8,25 +8,27 @@
 #include <unordered_set>
 #include <vector>
 
-namespace ds::broadcast {
-  struct State {
-    struct Storage {
-      std::mutex mtx{};
-      std::unordered_set<std::uint64_t> unique_nums{};// Guarded by mtx
-      std::vector<std::uint64_t> nums{};              // Guarded by mtx
+namespace tasks::broadcast::part5 {
 
-      using Offset = std::vector<std::uint64_t>::difference_type;
+struct State {
+  struct {
+    std::mutex mtx{};
+    std::unordered_set<std::uint64_t> unique_nums{}; // Guarded by mtx
+    std::vector<std::uint64_t> nums{};               // Guarded by mtx
 
-      std::unordered_map<std::string, Offset> maybe_unknown{};//Guarded by mtx
-    } storage;
+    using Offset = std::vector<std::uint64_t>::difference_type;
 
-    struct TopologyInfo {
-      std::atomic<bool> ready{false};
+    std::unordered_map<std::string, Offset> maybe_unknown{}; // Guarded by mtx
+  } storage;
 
-      std::mutex mtx{};
-      std::vector<std::string> all_node_ids{};// Guarded by mtx
-      std::unordered_map<std::string, std::vector<std::string>>
-          topology{};// Guarded by mtx
-    } info;
-  };
-}// namespace ds::broadcast
+  struct {
+    std::atomic<bool> ready{false};
+
+    std::mutex mtx{};
+    std::vector<std::string> all_node_ids{}; // Guarded by mtx
+    std::unordered_map<std::string, std::vector<std::string>>
+      topology{}; // Guarded by mtx
+  } info;
+};
+
+} // namespace tasks::broadcast::part5

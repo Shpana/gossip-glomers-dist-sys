@@ -1,10 +1,10 @@
 build-echo:
-	cmake --build build --target echo
+	cmake --build $(BUILD_DIR) --target echo
 
 maelstrom-echo: build-echo
 	maelstrom test \
-		-w echo 
-		--bin $(CURDIR)/build/tasks/echo/echo \
+		-w echo \
+		--bin $(BUILD_DIR)/tasks/echo/echo \
 		--log-stderr \
 		--node-count 3 \
 		--time-limit 60 	
