@@ -5,11 +5,11 @@
 #include <string>
 
 namespace tasks::kafka::part2 {
-  using Offset = std::uint64_t;
-  using Message = std::uint64_t;
 
-  using Log = std::map<Offset, Message>;
-  using Committed = std::map<std::string, Offset>;
+using Offset = std::uint64_t;
+using Message = std::uint64_t;
 
-  struct State {};
-}// namespace tasks::kafka::part2
+using Log = std::map<Offset, Message>;
+using Committed = std::map<std::string, Offset>;
+
+} // namespace tasks::kafka::part2

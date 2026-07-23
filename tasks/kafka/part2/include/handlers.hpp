@@ -1,50 +1,54 @@
 #pragma once
 
-#include "network/messages.hpp"
-#include "network/network.hpp"
-#include "routines/handler.hpp"
-
 #include "state.hpp"
 
+#include <maelstrom/network/messages.hpp>
+#include <maelstrom/network/network.hpp>
+#include <maelstrom/routines/handler.hpp>
+#include <maelstrom/utils/unit.hpp>
+
 namespace tasks::kafka::part2 {
-  class SendHandler final : public maelstrom::HandlerBase<State> {
-  public:
-    static constexpr std::string_view type{"send"};
 
-    yaclib::Future<maelstrom::Response>
-    handle(maelstrom::Network::Session session,
-           maelstrom::Request request) override;
+class SendHandler final : public maelstrom::HandlerBase<maelstrom::Unit> {
+public:
+  static constexpr std::string_view kType{"send"};
 
-  private:
-    yaclib::Future<Offset> insertToLog(maelstrom::Network::Session& session,
-                                       const std::string& key, Message message);
-  };
+  yaclib::Future<maelstrom::Response>
+  Handle(maelstrom::Network::Session session,
+         maelstrom::Request request) override;
 
-  class PollHandler final : public maelstrom::HandlerBase<State> {
-  public:
-    static constexpr std::string_view type{"poll"};
+private:
+  yaclib::Future<Offset> InsertToLog(maelstrom::Network::Session &session,
+                                     const std::string &key, Message message);
+};
 
-    yaclib::Future<maelstrom::Response>
-    handle(maelstrom::Network::Session session,
-           maelstrom::Request request) override;
-  };
+class PollHandler final : public maelstrom::HandlerBase<maelstrom::Unit> {
+public:
+  static constexpr std::string_view kType{"poll"};
 
-  class CommitOffsetsHandler final : public maelstrom::HandlerBase<State> {
-  public:
-    static constexpr std::string_view type{"commit_offsets"};
+  yaclib::Future<maelstrom::Response>
+  Handle(maelstrom::Network::Session session,
+         maelstrom::Request request) override;
+};
 
-    yaclib::Future<maelstrom::Response>
-    handle(maelstrom::Network::Session session,
-           maelstrom::Request request) override;
-  };
+class CommitOffsetsHandler final
+  : public maelstrom::HandlerBase<maelstrom::Unit> {
+public:
+  static constexpr std::string_view kType{"commit_offsets"};
 
-  class ListCommittedOffsetsHandler final
-      : public maelstrom::HandlerBase<State> {
-  public:
-    static constexpr std::string_view type{"list_committed_offsets"};
+  yaclib::Future<maelstrom::Response>
+  Handle(maelstrom::Network::Session session,
+         maelstrom::Request request) override;
+};
 
-    yaclib::Future<maelstrom::Response>
-    handle(maelstrom::Network::Session session,
-           maelstrom::Request request) override;
-  };
-}// namespace tasks::kafka::part2
+class ListCommittedOffsetsHandler final
+  : public maelstrom::HandlerBase<maelstrom::Unit> {
+public:
+  static constexpr std::string_view kType{"list_committed_offsets"};
+
+  yaclib::Future<maelstrom::Response>
+  Handle(maelstrom::Network::Session session,
+         maelstrom::Request request) override;
+};
+
+} // namespace tasks::kafka::part2
