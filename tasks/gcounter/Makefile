@@ -1,10 +1,10 @@
 build-gcounter:
-	cmake --build build --target gcounter
+	cmake --build $(BUILD_DIR) --target gcounter
 
 maelstrom-gcounter: build-gcounter
 	maelstrom test \
 		-w g-counter \
-		--bin $(CURDIR)/build/tasks/gcounter/gcounter \
+		--bin $(BUILD_DIR)/tasks/gcounter/gcounter \
 		--node-count 20 \
 		--rate 100 \
 		--time-limit 20 \

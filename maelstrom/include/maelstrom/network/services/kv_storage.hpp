@@ -35,9 +35,9 @@ template <> struct StorageType<Consistency::LastWriteWins> {
 template <typename V, Consistency C>
 class KeyValueStorage : public detail::StorageType<C> {
 public:
-  class ReadHandler;
-  class WriteHandler;
-  class CompareAndSwapHandler;
+  struct ReadHandler;
+  struct WriteHandler;
+  struct CompareAndSwapHandler;
 
 public:
   explicit KeyValueStorage(Network::Session &session);
@@ -56,16 +56,17 @@ private:
   Network::Session &session_;
 };
 
-template <typename V, Consistency C> class KeyValueStorage<V, C>::ReadHandler {
+template <typename V, Consistency C> struct KeyValueStorage<V, C>::ReadHandler {
   static constexpr std::string_view kType = "read";
 };
 
-template <typename V, Consistency C> class KeyValueStorage<V, C>::WriteHandler {
+template <typename V, Consistency C>
+struct KeyValueStorage<V, C>::WriteHandler {
   static constexpr std::string_view kType = "write";
 };
 
 template <typename V, Consistency C>
-class KeyValueStorage<V, C>::CompareAndSwapHandler {
+struct KeyValueStorage<V, C>::CompareAndSwapHandler {
   static constexpr std::string_view kType = "cas";
 };
 
@@ -83,7 +84,7 @@ maelstrom::KeyValueStorage<V, C>::Read(
   body["key"] = std::move(key);
 
   auto response = co_await session_.Call<ReadHandler>(
-    std::string{KeyValueStorage::type}, std::move(body), timeout);
+    std::string{KeyValueStorage::kType}, std::move(body), timeout);
 
   if (response.IsError()) {
     co_return std::unexpected{std::move(response).ToError().value()};
@@ -101,7 +102,7 @@ maelstrom::KeyValueStorage<V, C>::Write(
   body["value"] = std::move(value);
 
   auto response = co_await session_.Call<WriteHandler>(
-    std::string{KeyValueStorage::type}, std::move(body), timeout);
+    std::string{KeyValueStorage::kType}, std::move(body), timeout);
 
   if (response.IsError()) {
     co_return std::move(response).ToError().value();
@@ -122,7 +123,7 @@ maelstrom::KeyValueStorage<V, C>::CompareAndSwap(
   body["create_if_not_exists"] = create_if_not_exists;
 
   auto response = co_await session_.Call<CompareAndSwapHandler>(
-    std::string{KeyValueStorage::type}, std::move(body), timeout);
+    std::string{KeyValueStorage::kType}, std::move(body), timeout);
 
   if (response.IsError()) {
     co_return std::move(response).ToError().value();

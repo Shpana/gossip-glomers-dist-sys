@@ -1,24 +1,24 @@
 #include "operations.hpp"
 
-#include "log/logging.hpp"
-#include "network/messages.hpp"
-#include "network/services/kv_storage.hpp"
-
 #include <yaclib/async/when_all.hpp>
 #include <yaclib/coro/await.hpp>
 #include <yaclib/coro/future.hpp>
 
-using namespace std::chrono_literals;
+#include <maelstrom/log/logging.hpp>
+#include <maelstrom/network/messages.hpp>
+#include <maelstrom/network/services/kv_storage.hpp>
 
 namespace tasks::gcounter {
+
 namespace {
+using namespace std::chrono_literals;
 constexpr State::Clock::duration kCacheInvalidationTimeout{1s};
 } // namespace
 
-static yaclib::Future<maelstrom::Response>
-AddHandler::Handle(maelstrom::Network::Session &&session,
-                   maelstrom::Request &&request) {
-  auto &local = state_->local;
+yaclib::Future<maelstrom::Response>
+AddHandler::Handle(maelstrom::Network::Session session,
+                   maelstrom::Request request) {
+  auto &local = GetState().local;
 
   auto delta = request.body["delta"].get<std::uint64_t>();
 
@@ -28,19 +28,19 @@ AddHandler::Handle(maelstrom::Network::Session &&session,
   // Try to find the best estimation to minimize messages count
   std::uint64_t guess = local.value.fetch_add(delta);
 
-  while ((co_await kv_storage.compareAndSwap(env_->node_id, guess,
+  while ((co_await kv_storage.CompareAndSwap(GetEnvironment().node_id, guess,
                                              guess + delta, true))
            .has_value()) {
-    guess = (co_await kv_storage.read(env_->node_id)).value();
+    guess = (co_await kv_storage.Read(GetEnvironment().node_id)).value();
   }
 
-  co_return std::move(request).toResponse();
+  co_return std::move(request).ToResponse();
 }
 
-static yaclib::Future<maelstrom::Response>
-ReadHandler::Handle(maelstrom::Network::Session &&session,
-                    maelstrom::Request &&request) {
-  auto &cache = state_->cache;
+yaclib::Future<maelstrom::Response>
+ReadHandler::Handle(maelstrom::Network::Session session,
+                    maelstrom::Request request) {
+  auto &cache = GetState().cache;
 
   if (cache.enabled.load()) {
     auto guard = co_await cache.mtx.Guard();
@@ -50,24 +50,24 @@ ReadHandler::Handle(maelstrom::Network::Session &&session,
       // Caching for eventual consistency is ok
       auto body = nlohmann::json({});
       body["value"] = cache.value;
-      co_return std::move(request).toResponse(std::move(body));
+      co_return std::move(request).ToResponse(std::move(body));
     }
   }
 
-  auto value = co_await read(session);
+  auto value = co_await Read(session);
 
   if (cache.enabled.load()) {
     auto guard = co_await cache.mtx.Guard();
     cache.value = value;
-    cache.valid_to = State::Clock::now() + cache_invalidation_timeout;
+    cache.valid_to = State::Clock::now() + kCacheInvalidationTimeout;
   }
 
   auto body = nlohmann::json({});
   body["value"] = value;
-  co_return std::move(request).toResponse(std::move(body));
+  co_return std::move(request).ToResponse(std::move(body));
 }
 
-static yaclib::Future<std::uint64_t>
+yaclib::Future<std::uint64_t>
 ReadHandler::Read(maelstrom::Network::Session &session) {
   auto kv_storage = maelstrom::KeyValueStorage<
     std::uint64_t, maelstrom::Consistency::SequentialConsistent>{session};
@@ -75,13 +75,13 @@ ReadHandler::Read(maelstrom::Network::Session &session) {
   {
     using Result = std::optional<maelstrom::Error>;
     std::vector<yaclib::Future<Result>> fs;
-    fs.reserve(env_->available_node_ids.size());
+    fs.reserve(GetEnvironment().available_node_ids.size());
 
-    for (auto &id : env_->available_node_ids) {
+    for (auto &id : GetEnvironment().available_node_ids) {
       // To garentee 'program order' for reads
       // Sequantial consistent systems may not provide last value for reading
       // without such calls
-      fs.push_back(kv_storage.compareAndSwap(id, 0, 0));
+      fs.push_back(kv_storage.CompareAndSwap(id, 0, 0));
     }
 
     co_await yaclib::WhenAll(fs.begin(), fs.end());
@@ -92,10 +92,10 @@ ReadHandler::Read(maelstrom::Network::Session &session) {
   {
     using Result = std::expected<std::uint64_t, maelstrom::Error>;
     std::vector<yaclib::Future<Result>> fs;
-    fs.reserve(env_->available_node_ids.size());
+    fs.reserve(GetEnvironment().available_node_ids.size());
 
-    for (auto &id : env_->available_node_ids) {
-      fs.push_back(kv_storage.read(id));
+    for (auto &id : GetEnvironment().available_node_ids) {
+      fs.push_back(kv_storage.Read(id));
     }
 
     auto results = co_await yaclib::WhenAll(fs.begin(), fs.end());
@@ -109,4 +109,5 @@ ReadHandler::Read(maelstrom::Network::Session &session) {
 
   co_return value;
 }
+
 } // namespace tasks::gcounter

@@ -10,6 +10,7 @@
 int main() {
   using namespace std::chrono_literals;
 
+  // TODO(shpana): fix bugs
   maelstrom::Node<tasks::broadcast::part5::State> node{};
   node.Add<tasks::broadcast::part5::BroadcastHandler>();
   node.Add<tasks::broadcast::part5::BroadcastBulkHandler>();
