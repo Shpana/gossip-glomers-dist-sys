@@ -86,13 +86,13 @@ private:
 template <typename Handler>
 void maelstrom::Network::Session::Send(std::string destination,
                                        nlohmann::json body) {
-  Send(std::string{Handler::type}, std::move(destination), std::move(body));
+  Send(std::string{Handler::kType}, std::move(destination), std::move(body));
 }
 
 template <typename Handler>
 void maelstrom::Network::Session::SendAtLeastOnce(std::string destination,
                                                   nlohmann::json body) {
-  return SendAtLeastOnce(std::string{Handler::type}, std::move(destination),
+  return SendAtLeastOnce(std::string{Handler::kType}, std::move(destination),
                          std::move(body));
 }
 
@@ -100,7 +100,7 @@ template <typename Handler>
 yaclib::Future<maelstrom::Response> maelstrom::Network::Session::Session::Call(
   std::string destination, nlohmann::json body,
   std::optional<Network::Clock::duration> timeout) {
-  return Call(std::string{Handler::type}, std::move(destination),
+  return Call(std::string{Handler::kType}, std::move(destination),
               std::move(body), timeout);
 }
 
@@ -109,6 +109,6 @@ yaclib::Future<maelstrom::Response>
 maelstrom::Network::Session::Session::CallAtLeastOnce(
   std::string destination, nlohmann::json body,
   std::optional<Network::Clock::duration> timeout) {
-  return CallAtLeastOnce(std::string{Handler::type}, std::move(destination),
+  return CallAtLeastOnce(std::string{Handler::kType}, std::move(destination),
                          std::move(body), timeout);
 }

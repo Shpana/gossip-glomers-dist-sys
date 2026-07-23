@@ -1,5 +1,6 @@
 add_executable(broadcast-part2
   src/main.cpp
+  src/handlers.cpp
 )
 
 target_include_directories(broadcast-part2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
