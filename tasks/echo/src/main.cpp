@@ -1,8 +1,9 @@
 #include "echo.hpp"
-#include "node.hpp"
+
+#include <maelstrom/node.hpp>
 
 int main() {
   maelstrom::Node<maelstrom::Unit> node;
-  node.add<ds::echo::EchoHandler>();
-  node.run();
+  node.Add<tasks::echo::EchoHandler>();
+  node.Run();
 }

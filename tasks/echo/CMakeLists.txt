@@ -1,5 +1,5 @@
 add_executable(echo 
-    src/main.cpp
+  src/main.cpp
 )
 
 target_include_directories(echo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

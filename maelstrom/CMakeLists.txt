@@ -1,11 +1,11 @@
 add_library(maelstrom STATIC 
-  src/network/messages.cpp
-  src/network/network.cpp
-
   src/detail/processors/network.cpp
   src/detail/sync/timer.cpp
   src/detail/network/console_transport.cpp
   src/detail/network/in_memory_transport.cpp
+
+  src/network/messages.cpp
+  src/network/network.cpp
 )
 
 target_include_directories(maelstrom PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${json_SOURCE_DIR})
