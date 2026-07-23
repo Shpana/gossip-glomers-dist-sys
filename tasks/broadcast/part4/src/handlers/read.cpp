@@ -2,19 +2,21 @@
 
 #include <yaclib/async/make.hpp>
 
-namespace ds::broadcast {
-  yaclib::Future<maelstrom::Response>
-  ReadHandler::handle([[maybe_unused]] maelstrom::Network::Session&& session,
-                      maelstrom::Request&& request) {
-    auto& storage = env_->state->storage;
+namespace tasks::broadcast::part4 {
 
-    auto body = nlohmann::json({});
+yaclib::Future<maelstrom::Response>
+ReadHandler::Handle(maelstrom::Network::Session session,
+                    maelstrom::Request request) {
+  auto &storage = GetState().storage;
 
-    {
-      std::lock_guard guard{storage.mtx};
-      body["messages"] = storage.unique_nums;
-    }
+  auto body = nlohmann::json({});
 
-    return yaclib::MakeFuture(std::move(request).toResponse(std::move(body)));
+  {
+    std::lock_guard guard{storage.mtx};
+    body["messages"] = storage.unique_nums;
   }
-}// namespace ds::broadcast
+
+  return yaclib::MakeFuture(std::move(request).ToResponse(std::move(body)));
+}
+
+} // namespace tasks::broadcast::part4

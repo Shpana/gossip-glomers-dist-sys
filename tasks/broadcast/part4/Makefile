@@ -1,10 +1,10 @@
 build-broadcast-part4:
-	cmake --build build --target broadcast-part4
+	cmake --build $(BUILD_DIR) --target broadcast-part4
 
 maelstrom-broadcast-part4: build-broadcast-part4
 	maelstrom test \
 		-w broadcast \
-		--bin $(CURDIR)/build/broadcast-part4/broadcast-part4 \
+		--bin $(BUILD_DIR)/tasks/broadcast/part4/broadcast-part4 \
 		--log-stderr \
 		--node-count 25 \
 		--time-limit 20 \
