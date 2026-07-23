@@ -4,25 +4,27 @@
 
 #include <yaclib/async/make.hpp>
 
-#include "detail/network/in_memory_transport.hpp"
-#include "network/messages.hpp"
-#include "node.hpp"
-#include "routines/handler.hpp"
-#include "utils/unit.hpp"
+#include <maelstrom/detail/network/in_memory_transport.hpp>
+#include <maelstrom/network/messages.hpp>
+#include <maelstrom/node.hpp>
+#include <maelstrom/routines/handler.hpp>
+#include <maelstrom/utils/unit.hpp>
 
 namespace maelstrom::tests {
-  class EchoHandler final : public HandlerBase<Unit> {
-  public:
-    static constexpr std::string_view type = "echo";
 
-    yaclib::Future<Response> handle(Network::Session session,
-                                    Request request) override {
-      auto echo = nlohmann::json({});
-      echo["message"] = request.body["message"].get<std::string>();
-      return yaclib::MakeFuture(std::move(request).toResponse(std::move(echo)));
-    }
-  };
-}// namespace maelstrom::tests
+class EchoHandler final : public HandlerBase<Unit> {
+public:
+  static constexpr std::string_view type = "echo";
+
+  yaclib::Future<Response> handle(Network::Session session,
+                                  Request request) override {
+    auto echo = nlohmann::json({});
+    echo["message"] = request.body["message"].get<std::string>();
+    return yaclib::MakeFuture(std::move(request).toResponse(std::move(echo)));
+  }
+};
+
+} // namespace maelstrom::tests
 
 class EchoTest : public ::testing::Test {
 public:

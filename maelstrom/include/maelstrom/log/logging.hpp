@@ -4,6 +4,7 @@
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 
+// TODO(shpana): use glog
 #ifdef MAELSTROM_DEBUG
 #define LOG_DEBUG()                                                            \
   std::cerr << fmt::format("[DEBUG][{}]: ", std::chrono::system_clock::now())

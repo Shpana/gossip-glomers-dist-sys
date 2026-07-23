@@ -2,9 +2,9 @@
 
 #include <thread>
 
-#include "detail/network/in_memory_transport.hpp"
-#include "detail/processors/network.hpp"
-#include "network/messages.hpp"
+#include <maelstrom/detail/network/in_memory_transport.hpp>
+#include <maelstrom/detail/processors/network.hpp>
+#include <maelstrom/network/messages.hpp>
 
 using namespace std::chrono_literals;
 
@@ -25,9 +25,9 @@ protected:
     transport_ = std::make_shared<maelstrom::InMemoryTransport>();
 
     processor_ = std::make_shared<maelstrom::detail::NetworkProcessor>();
-    transport_->start();
-
     processor_->useTransport(transport_);
+
+    transport_->start();
   }
 
   void TearDown() override {
@@ -480,7 +480,7 @@ TEST_F(NetworkProcessorTest, ManeCallOnceWithTimeout) {
 
   std::this_thread::sleep_for(2s);
 
-  for (auto&& f: fs) {
+  for (auto &&f : fs) {
     EXPECT_TRUE(f.Ready());
   }
 

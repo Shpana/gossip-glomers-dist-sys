@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "detail/network/in_memory_transport.hpp"
-#include "node.hpp"
-#include "utils/unit.hpp"
+#include <maelstrom/detail/network/in_memory_transport.hpp>
+#include <maelstrom/node.hpp>
+#include <maelstrom/utils/unit.hpp>
 
 class InitTest : public ::testing::Test {
 public:

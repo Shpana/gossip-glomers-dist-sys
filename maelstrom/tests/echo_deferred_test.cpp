@@ -6,108 +6,112 @@
 
 #include <yaclib/async/make.hpp>
 
-#include "detail/network/in_memory_transport.hpp"
-#include "network/messages.hpp"
-#include "node.hpp"
-#include "routines/handler.hpp"
-#include "routines/worker.hpp"
+#include <maelstrom/detail/network/in_memory_transport.hpp>
+#include <maelstrom/network/messages.hpp>
+#include <maelstrom/node.hpp>
+#include <maelstrom/routines/handler.hpp>
+#include <maelstrom/routines/worker.hpp>
 
 using namespace std::chrono_literals;
 
 // Parse time
 namespace nlohmann {
-  template<typename Rep, typename Period>
-  struct adl_serializer<std::chrono::duration<Rep, Period>> {
-    static void from_json(const json& j,
-                          std::chrono::duration<Rep, Period>& duration) {
-      duration = std::chrono::duration<Rep, Period>{j.get<std::int64_t>()};
-    }
-  };
-}// namespace nlohmann
+
+template <typename Rep, typename Period>
+struct adl_serializer<std::chrono::duration<Rep, Period>> {
+  static void from_json(const json &j,
+                        std::chrono::duration<Rep, Period> &duration) {
+    duration = std::chrono::duration<Rep, Period>{j.get<std::int64_t>()};
+  }
+};
+
+} // namespace nlohmann
 
 namespace maelstrom::tests {
-  struct EchoState {
-    using Clock = std::chrono::steady_clock;
 
-    std::mutex mtx{};
+struct EchoState {
+  using Clock = std::chrono::steady_clock;
 
-    struct Deferred {
-      std::string source;
-      std::string message;
-      Clock::time_point deadline;
-    };
+  std::mutex mtx{};
 
-    std::list<Deferred> deferreds{};// Guarded by mtx
+  struct Deferred {
+    std::string source;
+    std::string message;
+    Clock::time_point deadline;
   };
 
-  class EchoHandler final : public HandlerBase<EchoState> {
-  public:
-    static constexpr std::string_view type = "echo";
+  std::list<Deferred> deferreds{}; // Guarded by mtx
+};
 
-    yaclib::Future<Response> handle(Network::Session session,
-                                    Request request) override {
-      using Clock = EchoState::Clock;
+class EchoHandler final : public HandlerBase<EchoState> {
+public:
+  static constexpr std::string_view type = "echo";
 
-      auto state = getState();
+  yaclib::Future<Response> handle(Network::Session session,
+                                  Request request) override {
+    using Clock = EchoState::Clock;
 
-      auto deferred = EchoState::Deferred{
-          .source = request.source,
-          .message = request.body["message"].get<std::string>(),
-          .deadline =
-              Clock::now() +
-              std::chrono::duration_cast<Clock::duration>(
-                  request.body["delay_ms"].get<std::chrono::milliseconds>())};
+    auto state = getState();
 
-      {
-        std::lock_guard guard{state->mtx};
-        state->deferreds.push_back(std::move(deferred));
-      }
+    auto deferred = EchoState::Deferred{
+        .source = request.source,
+        .message = request.body["message"].get<std::string>(),
+        .deadline =
+            Clock::now() +
+            std::chrono::duration_cast<Clock::duration>(
+                request.body["delay_ms"].get<std::chrono::milliseconds>())};
 
-      return yaclib::MakeFuture(std::move(request).toResponse());
+    {
+      std::lock_guard guard{state->mtx};
+      state->deferreds.push_back(std::move(deferred));
     }
-  };
 
-  class EchoWorker final : public WorkerBase<EchoState> {
-  public:
-    using WorkerBase<EchoState>::WorkerBase;
+    return yaclib::MakeFuture(std::move(request).toResponse());
+  }
+};
 
-    static constexpr std::string_view type = "echo";
+class EchoWorker final : public WorkerBase<EchoState> {
+public:
+  using WorkerBase<EchoState>::WorkerBase;
 
-    yaclib::Future<> process(Network::Session&& session) override {
-      using Clock = EchoState::Clock;
+  static constexpr std::string_view type = "echo";
 
-      auto state = getState();
+  yaclib::Future<> process(Network::Session session) override {
+    using Clock = EchoState::Clock;
 
-      auto now = Clock::now();
+    auto state = getState();
 
-      std::list<EchoState::Deferred> local_deferreds;
-      {
-        std::lock_guard guard{state->mtx};
-        local_deferreds = std::move(state->deferreds);
-      }
+    auto now = Clock::now();
 
-      for (auto& deferred: local_deferreds) {
-        if (deferred.deadline < now) {
-          auto body = nlohmann::json({});
-          body["message"] = std::move(deferred.message);
-          session.send("echo_deferred", std::move(deferred.source),
-                       std::move(body));
-        }
-      }
-
-      std::erase_if(local_deferreds,
-                    [now](const auto& elem) { return elem.deadline < now; });
-
-      if (local_deferreds.size() > 0) {
-        std::lock_guard guard{state->mtx};
-        state->deferreds.insert(state->deferreds.begin(),
-                                local_deferreds.begin(), local_deferreds.end());
-      }
-
-      return yaclib::MakeFuture();
+    std::list<EchoState::Deferred> local_deferreds;
+    {
+      std::lock_guard guard{state->mtx};
+      local_deferreds = std::move(state->deferreds);
     }
-  };
-}// namespace maelstrom::tests
+
+    for (auto &deferred : local_deferreds) {
+      if (deferred.deadline < now) {
+        auto body = nlohmann::json({});
+        body["message"] = std::move(deferred.message);
+        session.send("echo_deferred", std::move(deferred.source),
+                     std::move(body));
+      }
+    }
+
+    std::erase_if(local_deferreds,
+                  [now](const auto &elem) { return elem.deadline < now; });
+
+    if (local_deferreds.size() > 0) {
+      std::lock_guard guard{state->mtx};
+      state->deferreds.insert(state->deferreds.begin(), local_deferreds.begin(),
+                              local_deferreds.end());
+    }
+
+    return yaclib::MakeFuture();
+  }
+};
+
+} // namespace maelstrom::tests
 
 class EchoDeferredTest : public ::testing::Test {
 public:
