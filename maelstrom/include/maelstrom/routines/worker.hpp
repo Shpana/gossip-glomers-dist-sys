@@ -30,7 +30,7 @@ public:
   virtual yaclib::Future<> Process(Network::Session session) = 0;
 
 protected:
-  [[nodiscard]] std::shared_ptr<State> GetState() const;
+  [[nodiscard]] State &GetState() const;
   [[nodiscard]] const Environment &GetEnvironment() const;
 
 private:
@@ -82,13 +82,13 @@ void maelstrom::WorkerBase<State>::StartInternal(Environment env,
 template <typename State> void maelstrom::WorkerBase<State>::StopInternal() {}
 
 template <typename State>
-std::shared_ptr<State> maelstrom::WorkerBase<State>::GetState() const {
+State &maelstrom::WorkerBase<State>::GetState() const {
   if (!state_) [[unlikely]] {
     LOG_ERROR() << "Cannot get state for uninitialized node!\n";
     throw std::runtime_error{"Cannot get state for uninitialized node!"};
   }
 
-  return state_;
+  return *state_;
 }
 
 template <typename State>

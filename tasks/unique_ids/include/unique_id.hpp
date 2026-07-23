@@ -12,7 +12,7 @@ public:
   static constexpr std::string_view kType = "generate";
 
   void Start() override {
-    auto env = GetEnvironment();
+    auto &env = GetEnvironment();
     n_ = std::stoll(std::string{env.node_id.begin() + 1, env.node_id.end()});
   }
 
