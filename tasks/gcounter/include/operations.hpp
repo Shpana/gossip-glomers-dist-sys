@@ -5,6 +5,7 @@
 #include <maelstrom/network/messages.hpp>
 #include <maelstrom/network/network.hpp>
 #include <maelstrom/routines/handler.hpp>
+#include <maelstrom/routines/worker.hpp>
 
 namespace tasks::gcounter {
 
@@ -27,6 +28,15 @@ public:
 
 private:
   yaclib::Future<std::uint64_t> Read(maelstrom::Network::Session &session);
+};
+
+class OrdererWorker final : public maelstrom::WorkerBase<State> {
+public:
+  static constexpr std::string_view kType = "orderer";
+
+  using maelstrom::WorkerBase<State>::WorkerBase;
+
+  yaclib::Future<> Process(maelstrom::Network::Session session) override;
 };
 
 } // namespace tasks::gcounter

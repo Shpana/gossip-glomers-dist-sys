@@ -72,21 +72,6 @@ ReadHandler::Read(maelstrom::Network::Session &session) {
   auto kv_storage = maelstrom::KeyValueStorage<
     std::uint64_t, maelstrom::Consistency::SequentialConsistent>{session};
 
-  {
-    using Result = std::optional<maelstrom::Error>;
-    std::vector<yaclib::Future<Result>> fs;
-    fs.reserve(GetEnvironment().available_node_ids.size());
-
-    for (auto &id : GetEnvironment().available_node_ids) {
-      // To garentee 'program order' for reads
-      // Sequantial consistent systems may not provide last value for reading
-      // without such calls
-      fs.push_back(kv_storage.CompareAndSwap(id, 0, 0));
-    }
-
-    co_await yaclib::WhenAll(fs.begin(), fs.end());
-  }
-
   std::uint64_t value;
 
   {
@@ -108,6 +93,28 @@ ReadHandler::Read(maelstrom::Network::Session &session) {
   }
 
   co_return value;
+}
+
+yaclib::Future<> OrdererWorker::Process(maelstrom::Network::Session session) {
+  auto kv_storage = maelstrom::KeyValueStorage<
+    std::uint64_t, maelstrom::Consistency::SequentialConsistent>{session};
+
+  {
+    using Result = std::optional<maelstrom::Error>;
+    std::vector<yaclib::Future<Result>> fs;
+    fs.reserve(GetEnvironment().available_node_ids.size());
+
+    for (auto &id : GetEnvironment().available_node_ids) {
+      // To garentee 'program order' for reads
+      // Sequantial consistent systems may not provide last value for reading
+      // without such calls
+      fs.push_back(kv_storage.CompareAndSwap(id, 0, 0));
+    }
+
+    co_await yaclib::WhenAll(fs.begin(), fs.end());
+  }
+
+  co_return {};
 }
 
 } // namespace tasks::gcounter
