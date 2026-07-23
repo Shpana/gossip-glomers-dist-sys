@@ -30,15 +30,15 @@ struct Message {
   std::string destination;
   nlohmann::json body;
 
-  [[nodiscard]] bool isRequest() const;
-  std::optional<Request> toRequest() &&;
+  [[nodiscard]] bool IsRequest() const;
+  std::optional<Request> ToRequest() &&;
 
-  [[nodiscard]] bool isResponse() const;
-  std::optional<Response> toResponse() &&;
+  [[nodiscard]] bool IsResponse() const;
+  std::optional<Response> ToResponse() &&;
 
-  nlohmann::json toJson() &&;
+  nlohmann::json ToJson() &&;
 
-  static std::optional<Message> parse(std::string raw_message);
+  static std::optional<Message> Parse(const std::string &raw_message);
 };
 
 struct Request {
@@ -48,12 +48,12 @@ struct Request {
   nlohmann::json body;
   std::uint64_t message_id;
 
-  Message toMessage() &&;
+  Message ToMessage() &&;
 
-  Response toResponse(nlohmann::json body) &&;
-  Response toResponse() &&;
+  Response ToResponse(nlohmann::json body) &&;
+  Response ToResponse() &&;
 
-  Error toError(ErrorCode code, std::string what = {}) &&;
+  Error ToError(ErrorCode code, std::string what = {}) &&;
 };
 
 struct Response {
@@ -63,10 +63,10 @@ struct Response {
   nlohmann::json body;
   std::uint64_t in_reply_to;
 
-  Message toMessage() &&;
+  Message ToMessage() &&;
 
-  [[nodiscard]] bool isError() const;
-  std::optional<Error> toError() &&;
+  [[nodiscard]] bool IsError() const;
+  std::optional<Error> ToError() &&;
 };
 
 struct Error {
@@ -77,7 +77,7 @@ struct Error {
   nlohmann::json body;
   std::uint64_t in_reply_to;
 
-  Response toResponse() &&;
+  Response ToResponse() &&;
 };
 
 } // namespace maelstrom

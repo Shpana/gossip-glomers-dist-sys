@@ -1,5 +1,3 @@
-#include <gtest/gtest.h>
-
 #include <memory>
 
 #include <yaclib/async/make.hpp>
@@ -10,17 +8,19 @@
 #include <maelstrom/routines/handler.hpp>
 #include <maelstrom/utils/unit.hpp>
 
+#include <gtest/gtest.h>
+
 namespace maelstrom::tests {
 
 class EchoHandler final : public HandlerBase<Unit> {
 public:
-  static constexpr std::string_view type = "echo";
+  static constexpr std::string_view kType = "echo";
 
-  yaclib::Future<Response> handle(Network::Session session,
+  yaclib::Future<Response> Handle(Network::Session session,
                                   Request request) override {
     auto echo = nlohmann::json({});
     echo["message"] = request.body["message"].get<std::string>();
-    return yaclib::MakeFuture(std::move(request).toResponse(std::move(echo)));
+    return yaclib::MakeFuture(std::move(request).ToResponse(std::move(echo)));
   }
 };
 
@@ -28,11 +28,11 @@ public:
 
 class EchoTest : public ::testing::Test {
 public:
-  std::shared_ptr<maelstrom::InMemoryTransport> getTransport() {
+  std::shared_ptr<maelstrom::InMemoryTransport> GetTransport() {
     return transport_;
   }
 
-  [[nodiscard]] bool hasNotCatchedExceptions() const {
+  [[nodiscard]] bool HasNotCatchedExceptions() const {
     return has_not_catched_exceptions_.load();
   }
 
@@ -41,44 +41,44 @@ protected:
     transport_ = std::make_shared<maelstrom::InMemoryTransport>();
 
     node_ = std::make_shared<maelstrom::Node<maelstrom::Unit>>();
-    node_->add<maelstrom::tests::EchoHandler>();
-    node_->useTransport(transport_);
+    node_->Add<maelstrom::tests::EchoHandler>();
+    node_->UseTransport(transport_);
 
     assistant_ = std::thread{[this, node = node_]() {
       try {
-        node->run();
+        node->Run();
       } catch (...) {
         has_not_catched_exceptions_.store(true);
       }
     }};
 
-    while (!transport_->isRunning()) {
+    while (!transport_->IsRunning()) {
       ;
     }
 
     // Send inital message
     {
       auto request = maelstrom::Request{
-          .source = "c0",
-          .destination = "n0",
-          .type = "init",
-          .body = R"({"node_id": "n0", "node_ids": ["n0"]})"_json,
-          .message_id = 0};
+        .source = "c0",
+        .destination = "n0",
+        .type = "init",
+        .body = R"({"node_id": "n0", "node_ids": ["n0"]})"_json,
+        .message_id = 0};
 
-      transport_->push(std::move(request).toMessage());
-      std::ignore = transport_->pop();
+      transport_->Push(std::move(request).ToMessage());
+      std::ignore = transport_->Pop();
     }
   }
 
   void TearDown() override {
-    transport_->stopStreaming();
+    transport_->StopStreaming();
 
     if (assistant_.joinable()) {
       assistant_.join();
     }
 
-    EXPECT_TRUE(transport_->hasNoInflightResponses());
-    EXPECT_FALSE(hasNotCatchedExceptions());
+    EXPECT_TRUE(transport_->HasNoInflightResponses());
+    EXPECT_FALSE(HasNotCatchedExceptions());
 
     transport_.reset();
     node_.reset();
@@ -94,7 +94,7 @@ private:
 };
 
 TEST_F(EchoTest, RequestOk) {
-  auto transport = getTransport();
+  auto transport = GetTransport();
 
   auto request = maelstrom::Request{.source = "c0",
                                     .destination = "n0",
@@ -102,13 +102,13 @@ TEST_F(EchoTest, RequestOk) {
                                     .body = R"({"message": "42"})"_json,
                                     .message_id = 0};
 
-  transport->push(std::move(request).toMessage());
+  transport->Push(std::move(request).ToMessage());
 
-  auto message = transport->pop();
+  auto message = transport->Pop();
   EXPECT_TRUE(message.has_value());
-  EXPECT_TRUE(message.value().isResponse());
+  EXPECT_TRUE(message.value().IsResponse());
 
-  auto response = std::move(message.value()).toResponse().value();
+  auto response = std::move(message.value()).ToResponse().value();
   EXPECT_EQ(response.source, "n0");
   EXPECT_EQ(response.destination, "c0");
   EXPECT_EQ(response.type, "echo_ok");
@@ -119,7 +119,7 @@ TEST_F(EchoTest, RequestOk) {
 }
 
 TEST_F(EchoTest, RequestFailWrongType) {
-  auto transport = getTransport();
+  auto transport = GetTransport();
 
   auto request = maelstrom::Request{.source = "c0",
                                     .destination = "n0",
@@ -127,15 +127,15 @@ TEST_F(EchoTest, RequestFailWrongType) {
                                     .body = R"({"message": "42"})"_json,
                                     .message_id = 0};
 
-  transport->push(std::move(request).toMessage());
+  transport->Push(std::move(request).ToMessage());
 }
 
 TEST_F(EchoTest, ManyRequests) {
-  auto transport = getTransport();
+  auto transport = GetTransport();
 
-  constexpr std::size_t count = 10'000;
+  constexpr std::size_t kCount = 10'000;
 
-  for (std::size_t i = 0; i < count; ++i) {
+  for (std::size_t i = 0; i < kCount; ++i) {
     auto body = nlohmann::json({});
     body["message"] = std::to_string(i);
 
@@ -145,25 +145,25 @@ TEST_F(EchoTest, ManyRequests) {
                                       .body = std::move(body),
                                       .message_id = i};
 
-    transport->push(std::move(request).toMessage());
+    transport->Push(std::move(request).ToMessage());
   }
 
   std::vector<std::size_t> echos;
-  echos.reserve(count);
+  echos.reserve(kCount);
 
-  for (std::size_t i = 0; i < count; ++i) {
-    auto message = transport->pop();
+  for (std::size_t i = 0; i < kCount; ++i) {
+    auto message = transport->Pop();
     EXPECT_TRUE(message.has_value());
-    EXPECT_TRUE(message.value().isResponse());
+    EXPECT_TRUE(message.value().IsResponse());
 
-    auto response = std::move(message.value()).toResponse().value();
+    auto response = std::move(message.value()).ToResponse().value();
     echos.push_back(std::stoull(response.body["message"].get<std::string>()));
   }
 
-  EXPECT_EQ(echos.size(), count);
+  EXPECT_EQ(echos.size(), kCount);
 
   std::sort(echos.begin(), echos.end());
-  for (std::size_t i = 0; i < count; ++i) {
+  for (std::size_t i = 0; i < kCount; ++i) {
     EXPECT_EQ(echos[i], i);
   }
 }

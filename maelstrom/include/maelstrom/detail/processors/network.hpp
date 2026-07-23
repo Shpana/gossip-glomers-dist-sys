@@ -22,43 +22,43 @@ private:
   using Waiters = std::unordered_map<std::uint64_t, Waiter<P>>;
 
 public:
-  void start();
-  void stop();
+  void Start();
+  void Stop();
 
-  void useTransport(std::shared_ptr<ITransport> transport);
+  void UseTransport(std::shared_ptr<ITransport> transport);
 
-  void process(Response response);
+  void Process(Response response);
 
-  void send(Request request);
-  void sendAtLeastOnce(Request request,
+  void Send(Request request);
+  void SendAtLeastOnce(Request request,
                        std::optional<Clock::duration> timeout = std::nullopt);
   yaclib::Future<Response>
-  call(Request request, std::optional<Clock::duration> timeout = std::nullopt);
+  Call(Request request, std::optional<Clock::duration> timeout = std::nullopt);
   yaclib::Future<Response>
-  callAtLeastOnce(Request request,
+  CallAtLeastOnce(Request request,
                   std::optional<Clock::duration> timeout = std::nullopt);
 
 private:
   template <WaitPolicy P>
-  bool processInternal(Waiters<P> &waiters, Response &response);
+  bool ProcessInternal(Waiters<P> &waiters, Response &response);
 
   // TODO(shpana): use cancellation tokens?
-  void callDetachedInternal(Request request);
+  void CallDetachedInternal(Request request);
   yaclib::Future<Response>
-  callOnceInternal(Request request, std::optional<Clock::duration> timeout);
+  CallOnceInternal(Request request, std::optional<Clock::duration> timeout);
   // TODO(shpana): make exponential backoffs strategy
   yaclib::Future<Response>
-  callAtLeastOnceInternal(Request request,
+  CallAtLeastOnceInternal(Request request,
                           std::optional<Clock::duration> timeout);
 
-  void backgroundUpdate();
+  void BackgroundUpdate();
 
-  void updateOnce();
-  void updateAtLeastOnce();
+  void UpdateOnce();
+  void UpdateAtLeastOnce();
 
   // Not thead-safe
   template <WaitPolicy P>
-  void eraseExpiredDeadlines(Waiters<P> &waiters, Clock::time_point now);
+  void EraseExpiredDeadlines(Waiters<P> &waiters, Clock::time_point now);
 
 private:
   bool is_running_{false};

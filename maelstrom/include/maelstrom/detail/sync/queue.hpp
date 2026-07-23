@@ -9,7 +9,7 @@ namespace maelstrom::detail {
 
 template <typename V> class UnboundedBlockingQueue {
 public:
-  void push(V value) {
+  void Push(V value) {
     std::lock_guard guard{mtx_};
     if (!is_closed_) {
       buffer_.push_back(std::move(value));
@@ -17,7 +17,7 @@ public:
     }
   }
 
-  std::optional<V> pop() {
+  std::optional<V> Pop() {
     std::unique_lock lock{mtx_};
     while (buffer_.empty()) {
       if (is_closed_) {
@@ -25,32 +25,32 @@ public:
       }
       not_empty_.wait(lock);
     }
-    return std::make_optional<V>(popLocked());
+    return std::make_optional<V>(PopLocked());
   }
 
-  [[nodiscard]] bool isEmpty() const {
+  [[nodiscard]] bool IsEmpty() const {
     std::lock_guard guard{mtx_};
     return buffer_.empty();
   }
 
-  [[nodiscard]] std::size_t size() const {
+  [[nodiscard]] std::size_t Size() const {
     std::lock_guard guard{mtx_};
     return buffer_.size();
   }
 
-  void close() {
+  void Close() {
     std::lock_guard guard{mtx_};
     is_closed_ = true;
     not_empty_.notify_all();
   }
 
-  [[nodiscard]] bool isClosed() const {
+  [[nodiscard]] bool IsClosed() const {
     std::lock_guard guard{mtx_};
     return is_closed_;
   }
 
 private:
-  V popLocked() {
+  V PopLocked() {
     auto result = std::move(buffer_.front());
     buffer_.pop_front();
     return result;

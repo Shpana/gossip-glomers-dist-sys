@@ -1,5 +1,3 @@
-#include <gtest/gtest.h>
-
 #include <chrono>
 #include <list>
 #include <mutex>
@@ -11,6 +9,8 @@
 #include <maelstrom/node.hpp>
 #include <maelstrom/routines/handler.hpp>
 #include <maelstrom/routines/worker.hpp>
+
+#include <gtest/gtest.h>
 
 using namespace std::chrono_literals;
 
@@ -45,28 +45,27 @@ struct EchoState {
 
 class EchoHandler final : public HandlerBase<EchoState> {
 public:
-  static constexpr std::string_view type = "echo";
+  static constexpr std::string_view kType = "echo";
 
-  yaclib::Future<Response> handle(Network::Session session,
+  yaclib::Future<Response> Handle(Network::Session session,
                                   Request request) override {
     using Clock = EchoState::Clock;
 
-    auto state = getState();
+    auto state = GetState();
 
     auto deferred = EchoState::Deferred{
-        .source = request.source,
-        .message = request.body["message"].get<std::string>(),
-        .deadline =
-            Clock::now() +
-            std::chrono::duration_cast<Clock::duration>(
-                request.body["delay_ms"].get<std::chrono::milliseconds>())};
+      .source = request.source,
+      .message = request.body["message"].get<std::string>(),
+      .deadline = Clock::now() +
+                  std::chrono::duration_cast<Clock::duration>(
+                    request.body["delay_ms"].get<std::chrono::milliseconds>())};
 
     {
       std::lock_guard guard{state->mtx};
       state->deferreds.push_back(std::move(deferred));
     }
 
-    return yaclib::MakeFuture(std::move(request).toResponse());
+    return yaclib::MakeFuture(std::move(request).ToResponse());
   }
 };
 
@@ -74,12 +73,12 @@ class EchoWorker final : public WorkerBase<EchoState> {
 public:
   using WorkerBase<EchoState>::WorkerBase;
 
-  static constexpr std::string_view type = "echo";
+  static constexpr std::string_view kType = "echo";
 
-  yaclib::Future<> process(Network::Session session) override {
+  yaclib::Future<> Process(Network::Session session) override {
     using Clock = EchoState::Clock;
 
-    auto state = getState();
+    auto state = GetState();
 
     auto now = Clock::now();
 
@@ -93,7 +92,7 @@ public:
       if (deferred.deadline < now) {
         auto body = nlohmann::json({});
         body["message"] = std::move(deferred.message);
-        session.send("echo_deferred", std::move(deferred.source),
+        session.Send("echo_deferred", std::move(deferred.source),
                      std::move(body));
       }
     }
@@ -115,7 +114,7 @@ public:
 
 class EchoDeferredTest : public ::testing::Test {
 public:
-  std::shared_ptr<maelstrom::InMemoryTransport> getTransport() {
+  std::shared_ptr<maelstrom::InMemoryTransport> GetTransport() {
     return transport_;
   }
 
@@ -124,53 +123,53 @@ protected:
     transport_ = std::make_shared<maelstrom::InMemoryTransport>();
 
     node_ = std::make_shared<maelstrom::Node<maelstrom::tests::EchoState>>();
-    node_->add<maelstrom::tests::EchoHandler>();
-    node_->add<maelstrom::tests::EchoWorker>(50ms);
+    node_->Add<maelstrom::tests::EchoHandler>();
+    node_->Add<maelstrom::tests::EchoWorker>(50ms);
 
-    node_->useTransport(transport_);
+    node_->UseTransport(transport_);
 
     assistant_ = std::thread{[this, node = node_]() {
       try {
-        node->run();
+        node->Run();
       } catch (...) {
         has_not_catched_exceptions_.store(true);
       }
     }};
 
-    while (!transport_->isRunning()) {
+    while (!transport_->IsRunning()) {
       ;
     }
 
     // Send inital message
     {
       auto request = maelstrom::Request{
-          .source = "c0",
-          .destination = "n0",
-          .type = "init",
-          .body = R"({"node_id": "n0", "node_ids": ["n0"]})"_json,
-          .message_id = 0};
+        .source = "c0",
+        .destination = "n0",
+        .type = "init",
+        .body = R"({"node_id": "n0", "node_ids": ["n0"]})"_json,
+        .message_id = 0};
 
-      transport_->push(std::move(request).toMessage());
-      std::ignore = transport_->pop();
+      transport_->Push(std::move(request).ToMessage());
+      std::ignore = transport_->Pop();
     }
   }
 
   void TearDown() override {
-    transport_->stopStreaming();
+    transport_->StopStreaming();
 
     if (assistant_.joinable()) {
       assistant_.join();
     }
 
-    EXPECT_TRUE(transport_->hasNoInflightResponses());
-    EXPECT_FALSE(hasNotCatchedExceptions());
+    EXPECT_TRUE(transport_->HasNoInflightResponses());
+    EXPECT_FALSE(HasNotCatchedExceptions());
 
     transport_.reset();
     node_.reset();
   }
 
 private:
-  [[nodiscard]] bool hasNotCatchedExceptions() const {
+  [[nodiscard]] bool HasNotCatchedExceptions() const {
     return has_not_catched_exceptions_.load();
   }
 
@@ -186,30 +185,30 @@ private:
 TEST_F(EchoDeferredTest, ValidDelay) {
   using Clock = std::chrono::steady_clock;
 
-  auto transport = getTransport();
+  auto transport = GetTransport();
 
   Clock::time_point start, end;
 
   {
     auto request = maelstrom::Request{
-        .source = "c0",
-        .destination = "n0",
-        .type = "echo",
-        .body = R"({"message": "some_message", "delay_ms": 5000})"_json,
-        .message_id = 0};
+      .source = "c0",
+      .destination = "n0",
+      .type = "echo",
+      .body = R"({"message": "some_message", "delay_ms": 5000})"_json,
+      .message_id = 0};
 
     start = Clock::now();
-    transport->push(std::move(request).toMessage());
-    std::ignore = transport->pop();
+    transport->Push(std::move(request).ToMessage());
+    std::ignore = transport->Pop();
   }
 
   {
-    auto message = transport->pop();
+    auto message = transport->Pop();
     end = Clock::now();
 
     EXPECT_TRUE(message.has_value());
-    EXPECT_TRUE(message.value().isRequest());
-    auto request = std::move(message.value()).toRequest().value();
+    EXPECT_TRUE(message.value().IsRequest());
+    auto request = std::move(message.value()).ToRequest().value();
     EXPECT_EQ(request.source, "n0");
     EXPECT_EQ(request.destination, "c0");
     EXPECT_EQ(request.type, "echo_deferred");
@@ -219,33 +218,33 @@ TEST_F(EchoDeferredTest, ValidDelay) {
   EXPECT_GE(end - start, 5000ms);
   EXPECT_LE(end - start, 5100ms);
 
-  transport->stopStreaming();
+  transport->StopStreaming();
 }
 
 TEST_F(EchoDeferredTest, ValidDelaySequential) {
   using Clock = std::chrono::steady_clock;
 
-  auto transport = getTransport();
+  auto transport = GetTransport();
 
-  constexpr std::size_t times = 10;
+  constexpr std::size_t kTimes = 10;
 
-  for (std::size_t i = 0; i < times; ++i) {
+  for (std::size_t i = 0; i < kTimes; ++i) {
     auto request = maelstrom::Request{
-        .source = "c0",
-        .destination = "n0",
-        .type = "echo",
-        .body = R"({"message": "some_message", "delay_ms": 500})"_json,
-        .message_id = 0};
+      .source = "c0",
+      .destination = "n0",
+      .type = "echo",
+      .body = R"({"message": "some_message", "delay_ms": 500})"_json,
+      .message_id = 0};
 
     auto start = Clock::now();
-    transport->push(std::move(request).toMessage());
-    std::ignore = transport->pop();
+    transport->Push(std::move(request).ToMessage());
+    std::ignore = transport->Pop();
 
-    auto message = transport->pop();
+    auto message = transport->Pop();
     auto end = Clock::now();
     EXPECT_GE(end - start, 500ms);
     EXPECT_LE(end - start, 600ms);
   }
 
-  transport->stopStreaming();
+  transport->StopStreaming();
 }

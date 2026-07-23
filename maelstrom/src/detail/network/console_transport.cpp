@@ -1,20 +1,23 @@
 #include <maelstrom/detail/network/console_transport.hpp>
-
 #include <maelstrom/log/logging.hpp>
 
 namespace maelstrom {
 
-void ConsoleTransport::start() { is_running_.store(true); }
+void ConsoleTransport::Start() {
+  is_running_.store(true);
+}
 
-void ConsoleTransport::stop() { is_running_.store(false); }
+void ConsoleTransport::Stop() {
+  is_running_.store(false);
+}
 
-void ConsoleTransport::send(Message message) {
+void ConsoleTransport::Send(Message message) {
   if (!is_running_.load()) {
     LOG_ERROR() << "Try to send message by not running transport!\n";
     return;
   }
 
-  auto json = std::move(message).toJson();
+  auto json = std::move(message).ToJson();
 
   LOG_DEBUG() << "<- " << json << std::endl;
 
@@ -24,7 +27,7 @@ void ConsoleTransport::send(Message message) {
   }
 }
 
-std::optional<Message> ConsoleTransport::recieve() {
+std::optional<Message> ConsoleTransport::Recieve() {
   if (!is_running_.load()) {
     LOG_ERROR() << "Try to send message by not running transport!\n";
     return std::nullopt;
@@ -39,7 +42,7 @@ std::optional<Message> ConsoleTransport::recieve() {
 
   LOG_DEBUG() << "-> " << input << std::endl;
 
-  auto message = Message::parse(std::move(input));
+  auto message = Message::Parse(input);
   if (!message.has_value()) {
     return std::nullopt;
   }
@@ -47,11 +50,11 @@ std::optional<Message> ConsoleTransport::recieve() {
   return message;
 }
 
-[[nodiscard]] bool ConsoleTransport::isRunning() const {
+[[nodiscard]] bool ConsoleTransport::IsRunning() const {
   return is_running_.load();
 }
 
-[[nodiscard]] bool ConsoleTransport::isStreaming() const {
+[[nodiscard]] bool ConsoleTransport::IsStreaming() const {
   return !end_of_stream_.load();
 }
 

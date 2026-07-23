@@ -20,20 +20,20 @@ public:
 public:
   explicit Network(detail::NetworkProcessor &processor);
 
-  void start(Environment env);
-  void stop();
+  void Start(Environment env);
+  void Stop();
 
-  [[nodiscard]] Session makeSession();
+  [[nodiscard]] Session MakeSession();
 
 private:
-  [[nodiscard]] std::uint64_t generateNextId();
+  [[nodiscard]] std::uint64_t GenerateNextId();
 
 private:
   detail::NetworkProcessor &processor_;
   Environment env_;
 
   std::atomic<std::uint64_t> previous_id_{0};
-  std::uint64_t jitter_;
+  std::uint64_t jitter_{};
 };
 
 class Network::Session {
@@ -50,31 +50,31 @@ public:
 
   ~Session() = default;
 
-  void send(std::string type, std::string destination, nlohmann::json body);
-  void sendAtLeastOnce(std::string type, std::string destination,
+  void Send(std::string type, std::string destination, nlohmann::json body);
+  void SendAtLeastOnce(std::string type, std::string destination,
                        nlohmann::json body);
   yaclib::Future<Response>
-  call(std::string type, std::string destination, nlohmann::json body,
+  Call(std::string type, std::string destination, nlohmann::json body,
        std::optional<Network::Clock::duration> timeout = std::nullopt);
-  yaclib::Future<Response> callAtLeastOnce(
-      std::string type, std::string destination, nlohmann::json body,
-      std::optional<Network::Clock::duration> timeout = std::nullopt);
+  yaclib::Future<Response> CallAtLeastOnce(
+    std::string type, std::string destination, nlohmann::json body,
+    std::optional<Network::Clock::duration> timeout = std::nullopt);
 
   template <typename Handler>
-  void send(std::string destination, nlohmann::json body);
+  void Send(std::string destination, nlohmann::json body);
   template <typename Handler>
-  void sendAtLeastOnce(std::string destination, nlohmann::json body);
+  void SendAtLeastOnce(std::string destination, nlohmann::json body);
   template <typename Handler>
   yaclib::Future<Response>
-  call(std::string destination, nlohmann::json body,
+  Call(std::string destination, nlohmann::json body,
        std::optional<Network::Clock::duration> timeout = std::nullopt);
   template <typename Handler>
-  yaclib::Future<Response> callAtLeastOnce(
-      std::string destination, nlohmann::json body,
-      std::optional<Network::Clock::duration> timeout = std::nullopt);
+  yaclib::Future<Response> CallAtLeastOnce(
+    std::string destination, nlohmann::json body,
+    std::optional<Network::Clock::duration> timeout = std::nullopt);
 
 private:
-  [[nodiscard]] Request makeRequest(std::string type, std::string destination,
+  [[nodiscard]] Request MakeRequest(std::string type, std::string destination,
                                     nlohmann::json body) const;
 
 private:
@@ -84,31 +84,31 @@ private:
 } // namespace maelstrom
 
 template <typename Handler>
-void maelstrom::Network::Session::send(std::string destination,
+void maelstrom::Network::Session::Send(std::string destination,
                                        nlohmann::json body) {
-  send(std::string{Handler::type}, std::move(destination), std::move(body));
+  Send(std::string{Handler::type}, std::move(destination), std::move(body));
 }
 
 template <typename Handler>
-void maelstrom::Network::Session::sendAtLeastOnce(std::string destination,
+void maelstrom::Network::Session::SendAtLeastOnce(std::string destination,
                                                   nlohmann::json body) {
-  return sendAtLeastOnce(std::string{Handler::type}, std::move(destination),
+  return SendAtLeastOnce(std::string{Handler::type}, std::move(destination),
                          std::move(body));
 }
 
 template <typename Handler>
-yaclib::Future<maelstrom::Response> maelstrom::Network::Session::Session::call(
-    std::string destination, nlohmann::json body,
-    std::optional<Network::Clock::duration> timeout) {
-  return call(std::string{Handler::type}, std::move(destination),
+yaclib::Future<maelstrom::Response> maelstrom::Network::Session::Session::Call(
+  std::string destination, nlohmann::json body,
+  std::optional<Network::Clock::duration> timeout) {
+  return Call(std::string{Handler::type}, std::move(destination),
               std::move(body), timeout);
 }
 
 template <typename Handler>
 yaclib::Future<maelstrom::Response>
-maelstrom::Network::Session::Session::callAtLeastOnce(
-    std::string destination, nlohmann::json body,
-    std::optional<Network::Clock::duration> timeout) {
-  return callAtLeastOnce(std::string{Handler::type}, std::move(destination),
+maelstrom::Network::Session::Session::CallAtLeastOnce(
+  std::string destination, nlohmann::json body,
+  std::optional<Network::Clock::duration> timeout) {
+  return CallAtLeastOnce(std::string{Handler::type}, std::move(destination),
                          std::move(body), timeout);
 }

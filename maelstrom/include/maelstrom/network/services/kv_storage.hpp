@@ -19,15 +19,15 @@ namespace detail {
 template <Consistency C> struct StorageType;
 
 template <> struct StorageType<Consistency::Linearizable> {
-  static constexpr std::string_view type = "lin-kv";
+  static constexpr std::string_view kType = "lin-kv";
 };
 
 template <> struct StorageType<Consistency::SequentialConsistent> {
-  static constexpr std::string_view type = "seq-kv";
+  static constexpr std::string_view kType = "seq-kv";
 };
 
 template <> struct StorageType<Consistency::LastWriteWins> {
-  static constexpr std::string_view type = "lww-kv";
+  static constexpr std::string_view kType = "lww-kv";
 };
 
 } // namespace detail
@@ -43,50 +43,50 @@ public:
   explicit KeyValueStorage(Network::Session &session);
 
   yaclib::Future<std::expected<V, Error>>
-  read(std::string key,
+  Read(std::string key,
        std::optional<Network::Clock::duration> timeout = std::nullopt);
   yaclib::Future<std::optional<Error>>
-  write(std::string key, V value,
+  Write(std::string key, V value,
         std::optional<Network::Clock::duration> timeout = std::nullopt);
-  yaclib::Future<std::optional<Error>> compareAndSwap(
-      std::string key, V from, V to, bool create_if_not_exists = true,
-      std::optional<Network::Clock::duration> timeout = std::nullopt);
+  yaclib::Future<std::optional<Error>> CompareAndSwap(
+    std::string key, V from, V to, bool create_if_not_exists = true,
+    std::optional<Network::Clock::duration> timeout = std::nullopt);
 
 private:
   Network::Session &session_;
 };
 
 template <typename V, Consistency C> class KeyValueStorage<V, C>::ReadHandler {
-  static constexpr std::string_view type = "read";
+  static constexpr std::string_view kType = "read";
 };
 
 template <typename V, Consistency C> class KeyValueStorage<V, C>::WriteHandler {
-  static constexpr std::string_view type = "write";
+  static constexpr std::string_view kType = "write";
 };
 
 template <typename V, Consistency C>
 class KeyValueStorage<V, C>::CompareAndSwapHandler {
-  static constexpr std::string_view type = "cas";
+  static constexpr std::string_view kType = "cas";
 };
 
 } // namespace maelstrom
 
 template <typename V, maelstrom::Consistency C>
 maelstrom::KeyValueStorage<V, C>::KeyValueStorage(Network::Session &session)
-    : session_{session} {}
+  : session_{session} {}
 
 template <typename V, maelstrom::Consistency C>
 yaclib::Future<std::expected<V, maelstrom::Error>>
-maelstrom::KeyValueStorage<V, C>::read(
-    std::string key, std::optional<Network::Clock::duration> timeout) {
+maelstrom::KeyValueStorage<V, C>::Read(
+  std::string key, std::optional<Network::Clock::duration> timeout) {
   auto body = nlohmann::json({});
   body["key"] = std::move(key);
 
-  auto response = co_await session_.call<ReadHandler>(
-      std::string{KeyValueStorage::type}, std::move(body), timeout);
+  auto response = co_await session_.Call<ReadHandler>(
+    std::string{KeyValueStorage::type}, std::move(body), timeout);
 
-  if (response.isError()) {
-    co_return std::unexpected{std::move(response).toError().value()};
+  if (response.IsError()) {
+    co_return std::unexpected{std::move(response).ToError().value()};
   }
 
   co_return response.body["value"].template get<V>();
@@ -94,17 +94,17 @@ maelstrom::KeyValueStorage<V, C>::read(
 
 template <typename V, maelstrom::Consistency C>
 yaclib::Future<std::optional<maelstrom::Error>>
-maelstrom::KeyValueStorage<V, C>::write(
-    std::string key, V value, std::optional<Network::Clock::duration> timeout) {
+maelstrom::KeyValueStorage<V, C>::Write(
+  std::string key, V value, std::optional<Network::Clock::duration> timeout) {
   auto body = nlohmann::json({});
   body["key"] = std::move(key);
   body["value"] = std::move(value);
 
-  auto response = co_await session_.call<WriteHandler>(
-      std::string{KeyValueStorage::type}, std::move(body), timeout);
+  auto response = co_await session_.Call<WriteHandler>(
+    std::string{KeyValueStorage::type}, std::move(body), timeout);
 
-  if (response.isError()) {
-    co_return std::move(response).toError().value();
+  if (response.IsError()) {
+    co_return std::move(response).ToError().value();
   }
 
   co_return std::nullopt;
@@ -112,20 +112,20 @@ maelstrom::KeyValueStorage<V, C>::write(
 
 template <typename V, maelstrom::Consistency C>
 yaclib::Future<std::optional<maelstrom::Error>>
-maelstrom::KeyValueStorage<V, C>::compareAndSwap(
-    std::string key, V from, V to, bool create_if_not_exists,
-    std::optional<Network::Clock::duration> timeout) {
+maelstrom::KeyValueStorage<V, C>::CompareAndSwap(
+  std::string key, V from, V to, bool create_if_not_exists,
+  std::optional<Network::Clock::duration> timeout) {
   auto body = nlohmann::json({});
   body["key"] = std::move(key);
   body["from"] = std::move(from);
   body["to"] = std::move(to);
   body["create_if_not_exists"] = create_if_not_exists;
 
-  auto response = co_await session_.call<CompareAndSwapHandler>(
-      std::string{KeyValueStorage::type}, std::move(body), timeout);
+  auto response = co_await session_.Call<CompareAndSwapHandler>(
+    std::string{KeyValueStorage::type}, std::move(body), timeout);
 
-  if (response.isError()) {
-    co_return std::move(response).toError().value();
+  if (response.IsError()) {
+    co_return std::move(response).ToError().value();
   }
 
   co_return std::nullopt;

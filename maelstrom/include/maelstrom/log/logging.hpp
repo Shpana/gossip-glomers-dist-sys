@@ -6,11 +6,11 @@
 
 // TODO(shpana): use glog
 #ifdef MAELSTROM_DEBUG
-#define LOG_DEBUG()                                                            \
-  std::cerr << fmt::format("[DEBUG][{}]: ", std::chrono::system_clock::now())
+#  define LOG_DEBUG()                                                          \
+    std::cerr << fmt::format("[DEBUG][{}]: ", std::chrono::system_clock::now())
 #else
-#define LOG_DEBUG()                                                            \
-  std::stringstream {}
+#  define LOG_DEBUG()                                                          \
+    std::stringstream {}
 #endif
 #define LOG_INFO()                                                             \
   std::cerr << fmt::format("[INFO][{}]: ", std::chrono::system_clock::now())

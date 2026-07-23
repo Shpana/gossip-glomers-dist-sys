@@ -9,12 +9,12 @@ BUILD_TARGETS+=$(addprefix build-,$(TESTS))
 BUILD_TARGETS+=build-maelstrom
 
 $(BUILD_TARGETS): build-%:
-	cmake --build build --target $* 
+	cmake --build $(BUILD_DIR) --target $* 
 
 RUN_TARGETS:=$(addprefix run-,$(TESTS))
 
 $(RUN_TARGETS): run-%: build-%
-	$(CURDIR)/build/maelstrom/$*
+	$(CURDIR)/$(BUILD_DIR)/maelstrom/$*
 
 run-tests: $(RUN_TARGETS)
 

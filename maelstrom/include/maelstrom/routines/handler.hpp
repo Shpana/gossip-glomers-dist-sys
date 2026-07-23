@@ -20,21 +20,21 @@ template <typename State> class HandlerBase {
 public:
   virtual ~HandlerBase() = default;
 
-  virtual void start();
-  virtual void stop();
+  virtual void Start();
+  virtual void Stop();
 
-  virtual yaclib::Future<Response> handle(Network::Session session,
+  virtual yaclib::Future<Response> Handle(Network::Session session,
                                           Request request) = 0;
 
 protected:
-  [[nodiscard]] std::shared_ptr<State> getState() const;
-  [[nodiscard]] const Environment &getEnvironment() const;
+  [[nodiscard]] std::shared_ptr<State> GetState() const;
+  [[nodiscard]] const Environment &GetEnvironment() const;
 
 private:
   friend detail::HandlersProcessor<State>;
 
-  void startInternal(Environment env, std::shared_ptr<State> state);
-  void stopInternal();
+  void StartInternal(Environment env, std::shared_ptr<State> state);
+  void StopInternal();
 
 private:
   std::optional<const Environment> env_{std::nullopt};
@@ -42,28 +42,28 @@ private:
 };
 
 template <typename Handler, typename State>
-concept IsHandler = std::derived_from<Handler, HandlerBase<State>> &&
-                    requires(Handler handler) {
-                      { Handler::type };
-                    };
+concept IsHandler =
+  std::derived_from<Handler, HandlerBase<State>> && requires(Handler handler) {
+    { Handler::kType };
+  };
 
 } // namespace maelstrom
 
-template <typename State> void maelstrom::HandlerBase<State>::start() {}
+template <typename State> void maelstrom::HandlerBase<State>::Start() {}
 
-template <typename State> void maelstrom::HandlerBase<State>::stop() {}
+template <typename State> void maelstrom::HandlerBase<State>::Stop() {}
 
 template <typename State>
-void maelstrom::HandlerBase<State>::startInternal(
-    Environment env, std::shared_ptr<State> state) {
+void maelstrom::HandlerBase<State>::StartInternal(
+  Environment env, std::shared_ptr<State> state) {
   env_.emplace(std::move(env));
   state_ = std::move(state);
 }
 
-template <typename State> void maelstrom::HandlerBase<State>::stopInternal() {}
+template <typename State> void maelstrom::HandlerBase<State>::StopInternal() {}
 
 template <typename State>
-std::shared_ptr<State> maelstrom::HandlerBase<State>::getState() const {
+std::shared_ptr<State> maelstrom::HandlerBase<State>::GetState() const {
   if (!state_) [[unlikely]] {
     LOG_ERROR() << "Cannot get state for uninitialized node!\n";
     throw std::runtime_error{"Cannot get state for uninitialized node!"};
@@ -74,7 +74,7 @@ std::shared_ptr<State> maelstrom::HandlerBase<State>::getState() const {
 
 template <typename State>
 const maelstrom::Environment &
-maelstrom::HandlerBase<State>::getEnvironment() const {
+maelstrom::HandlerBase<State>::GetEnvironment() const {
   if (!env_.has_value()) [[unlikely]] {
     LOG_ERROR() << "Cannot get environment for uninitialized node!\n";
     throw std::runtime_error{"Cannot get environment for uninitialized node!"};

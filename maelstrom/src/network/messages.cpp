@@ -1,19 +1,18 @@
-#include <maelstrom/network/messages.hpp>
-
 #include <maelstrom/log/logging.hpp>
+#include <maelstrom/network/messages.hpp>
 
 namespace maelstrom {
 
 namespace {
-constexpr std::string_view error_type = "error";
-}
+constexpr std::string_view kErrorType = "error";
+} // namespace
 
-bool Message::isRequest() const {
+bool Message::IsRequest() const {
   return body.contains("type") && body.contains("msg_id");
 }
 
-std::optional<Request> Message::toRequest() && {
-  if (!isRequest()) {
+std::optional<Request> Message::ToRequest() && {
+  if (!IsRequest()) {
     return std::nullopt;
   }
 
@@ -27,12 +26,12 @@ std::optional<Request> Message::toRequest() && {
                  .message_id = message_id};
 }
 
-bool Message::isResponse() const {
+bool Message::IsResponse() const {
   return body.contains("type") && body.contains("in_reply_to");
 }
 
-std::optional<Response> Message::toResponse() && {
-  if (!isResponse()) {
+std::optional<Response> Message::ToResponse() && {
+  if (!IsResponse()) {
     return std::nullopt;
   }
 
@@ -46,7 +45,7 @@ std::optional<Response> Message::toResponse() && {
                   .in_reply_to = in_reply_to};
 }
 
-nlohmann::json Message::toJson() && {
+nlohmann::json Message::ToJson() && {
   nlohmann::json json_message = nlohmann::json({});
   json_message["src"] = std::move(source);
   json_message["dest"] = std::move(destination);
@@ -54,8 +53,8 @@ nlohmann::json Message::toJson() && {
   return json_message;
 }
 
-std::optional<Message> Message::parse(std::string raw_message) {
-  auto json = nlohmann::json::parse(std::move(raw_message));
+std::optional<Message> Message::Parse(const std::string &raw_message) {
+  auto json = nlohmann::json::parse(raw_message);
 
   Message request;
 
@@ -69,7 +68,7 @@ std::optional<Message> Message::parse(std::string raw_message) {
                  .body = std::move(json["body"])};
 }
 
-Message Request::toMessage() && {
+Message Request::ToMessage() && {
   body["type"] = std::move(type);
   body["msg_id"] = message_id;
 
@@ -78,7 +77,7 @@ Message Request::toMessage() && {
                  .body = std::move(body)};
 }
 
-Response Request::toResponse(nlohmann::json body) && {
+Response Request::ToResponse(nlohmann::json body) && {
   return Response{.source = std::move(destination),
                   .destination = std::move(source),
                   .type = type + "_ok",
@@ -86,11 +85,11 @@ Response Request::toResponse(nlohmann::json body) && {
                   .in_reply_to = message_id};
 }
 
-Response Request::toResponse() && {
-  return std::move(*this).toResponse(nlohmann::json({}));
+Response Request::ToResponse() && {
+  return std::move(*this).ToResponse(nlohmann::json({}));
 }
 
-Error Request::toError(ErrorCode code, std::string what) && {
+Error Request::ToError(ErrorCode code, std::string what) && {
   return Error{.source = std::move(destination),
                .destination = std::move(source),
                .code = code,
@@ -99,7 +98,7 @@ Error Request::toError(ErrorCode code, std::string what) && {
                .in_reply_to = message_id};
 }
 
-Message Response::toMessage() && {
+Message Response::ToMessage() && {
   body["type"] = std::move(type);
   body["in_reply_to"] = in_reply_to;
 
@@ -108,12 +107,12 @@ Message Response::toMessage() && {
                  .body = std::move(body)};
 }
 
-bool Response::isError() const {
-  return type == error_type && body.contains("code") && body.contains("text");
+bool Response::IsError() const {
+  return type == kErrorType && body.contains("code") && body.contains("text");
 }
 
-std::optional<Error> Response::toError() && {
-  if (!isError()) {
+std::optional<Error> Response::ToError() && {
+  if (!IsError()) {
     return std::nullopt;
   }
 
@@ -125,13 +124,13 @@ std::optional<Error> Response::toError() && {
                .in_reply_to = in_reply_to};
 }
 
-Response Error::toResponse() && {
+Response Error::ToResponse() && {
   body["code"] = code;
   body["text"] = std::move(what);
 
   return Response{.source = std::move(source),
                   .destination = std::move(destination),
-                  .type = std::string{error_type},
+                  .type = std::string{kErrorType},
                   .body = std::move(body),
                   .in_reply_to = in_reply_to};
 }

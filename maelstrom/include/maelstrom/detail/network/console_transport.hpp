@@ -8,14 +8,14 @@ namespace maelstrom {
 
 class ConsoleTransport final : public ITransport {
 public:
-  void start() override;
-  void stop() override;
+  void Start() override;
+  void Stop() override;
 
-  void send(Message message) override;
-  std::optional<Message> recieve() override;
+  void Send(Message message) override;
+  std::optional<Message> Recieve() override;
 
-  [[nodiscard]] bool isRunning() const override;
-  [[nodiscard]] bool isStreaming() const override;
+  [[nodiscard]] bool IsRunning() const override;
+  [[nodiscard]] bool IsStreaming() const override;
 
 private:
   std::mutex mtx_{}; // Guards access to std cout

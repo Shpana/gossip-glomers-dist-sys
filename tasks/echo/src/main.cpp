@@ -1,5 +1,4 @@
 #include "echo.hpp"
-
 #include "node.hpp"
 
 int main() {

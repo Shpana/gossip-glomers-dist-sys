@@ -1,5 +1,4 @@
 #include "node.hpp"
-
 #include "unique_id.hpp"
 
 int main() {

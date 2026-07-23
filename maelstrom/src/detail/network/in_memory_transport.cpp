@@ -1,70 +1,75 @@
 #include <maelstrom/detail/network/in_memory_transport.hpp>
-
 #include <maelstrom/log/logging.hpp>
 
 namespace maelstrom {
 
-void InMemoryTransport::start() { is_running_.store(true); }
+void InMemoryTransport::Start() {
+  is_running_.store(true);
+}
 
-void InMemoryTransport::stop() { is_running_.store(false); }
+void InMemoryTransport::Stop() {
+  is_running_.store(false);
+}
 
-void InMemoryTransport::send(Message message) {
+void InMemoryTransport::Send(Message message) {
   if (!is_running_.load()) {
     LOG_ERROR() << "Try to send message by not running transport!\n";
     return;
   }
-  out_.push(std::move(message));
+  out_.Push(std::move(message));
 }
 
-std::optional<Message> InMemoryTransport::recieve() {
+std::optional<Message> InMemoryTransport::Recieve() {
   if (!is_running_.load()) {
     LOG_ERROR() << "Try to send message by not running transport!\n";
     return std::nullopt;
   }
-  return in_.pop();
+  return in_.Pop();
 }
 
-[[nodiscard]] bool InMemoryTransport::isRunning() const {
+[[nodiscard]] bool InMemoryTransport::IsRunning() const {
   return is_running_.load();
 }
 
-[[nodiscard]] bool InMemoryTransport::isStreaming() const {
-  return !in_.isClosed();
+[[nodiscard]] bool InMemoryTransport::IsStreaming() const {
+  return !in_.IsClosed();
 }
 
-void InMemoryTransport::startStreaming() { end_of_stream_.store(false); }
+void InMemoryTransport::StartStreaming() {
+  end_of_stream_.store(false);
+}
 
-void InMemoryTransport::stopStreaming() {
+void InMemoryTransport::StopStreaming() {
   end_of_stream_.store(true);
-  in_.close();
+  in_.Close();
 }
 
-void InMemoryTransport::push(Message message) {
+void InMemoryTransport::Push(Message message) {
   if (!is_running_.load()) {
     LOG_ERROR() << "Try to push message to not running transport!\n";
     return;
   }
-  in_.push(std::move(message));
+  in_.Push(std::move(message));
 }
 
-std::optional<Message> InMemoryTransport::pop() {
+std::optional<Message> InMemoryTransport::Pop() {
   if (!is_running_.load()) {
     LOG_ERROR() << "Try to pop message from not running transport!\n";
     return std::nullopt;
   }
-  return out_.pop();
+  return out_.Pop();
 }
 
-[[nodiscard]] std::size_t InMemoryTransport::infligthResponses() const {
-  return out_.size();
+[[nodiscard]] std::size_t InMemoryTransport::InfligthResponses() const {
+  return out_.Size();
 }
 
-[[nodiscard]] bool InMemoryTransport::hasInflightResponses() const {
-  return !out_.isEmpty();
+[[nodiscard]] bool InMemoryTransport::HasInflightResponses() const {
+  return !out_.IsEmpty();
 }
 
-[[nodiscard]] bool InMemoryTransport::hasNoInflightResponses() const {
-  return out_.isEmpty();
+[[nodiscard]] bool InMemoryTransport::HasNoInflightResponses() const {
+  return out_.IsEmpty();
 }
 
 } // namespace maelstrom

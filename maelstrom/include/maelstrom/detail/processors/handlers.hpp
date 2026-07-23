@@ -23,14 +23,14 @@ public:
   HandlersProcessor(yaclib::IExecutor &executor, Network &network);
 
   template <IsHandler<State> Handler, typename... Args>
-  void add(Args &&...args);
+  void Add(Args &&...args);
 
-  void start(Environment env, std::shared_ptr<State> state);
-  void stop();
+  void Start(Environment env, std::shared_ptr<State> state);
+  void Stop();
 
-  void useTransport(std::shared_ptr<ITransport> transport);
+  void UseTransport(std::shared_ptr<ITransport> transport);
 
-  void process(Request request);
+  void Process(Request request);
 
 private:
   bool is_running_{false};
@@ -41,48 +41,48 @@ private:
   Network &network_;
 
   std::unordered_map<std::string, std::unique_ptr<HandlerBase<State>>>
-      handlers_{};
+    handlers_{};
 };
 
 } // namespace maelstrom::detail
 
 template <typename State>
 maelstrom::detail::HandlersProcessor<State>::HandlersProcessor(
-    yaclib::IExecutor &executor, Network &network)
-    : executor_{executor}, network_{network} {}
+  yaclib::IExecutor &executor, Network &network)
+  : executor_{executor}, network_{network} {}
 
 template <typename State>
 template <maelstrom::IsHandler<State> Handler, typename... Args>
-void maelstrom::detail::HandlersProcessor<State>::add(Args &&...args) {
+void maelstrom::detail::HandlersProcessor<State>::Add(Args &&...args) {
   if (is_running_) {
     LOG_ERROR() << fmt::format(
-        "Cannot add handler '{}', node already started!\n", Handler::type);
+      "Cannot add handler '{}', node already started!\n", Handler::kType);
     return;
   }
 
   auto handler = std::make_unique<Handler>(std::forward<Args>(args)...);
-  handlers_[std::string{Handler::type}] = std::move(handler);
+  handlers_[std::string{Handler::kType}] = std::move(handler);
   LOG_INFO() << fmt::format("Handler '{}' was added to node registry!\n",
-                            Handler::type);
+                            Handler::kType);
 }
 
 template <typename State>
-void maelstrom::detail::HandlersProcessor<State>::start(
-    Environment env, std::shared_ptr<State> state) {
+void maelstrom::detail::HandlersProcessor<State>::Start(
+  Environment env, std::shared_ptr<State> state) {
   std::exchange(is_running_, true);
 
   for (auto &[type, handler] : handlers_) {
-    handler->startInternal(env, state);
-    handler->start();
+    handler->StartInternal(env, state);
+    handler->Start();
   }
 }
 
 template <typename State>
-void maelstrom::detail::HandlersProcessor<State>::stop() {
+void maelstrom::detail::HandlersProcessor<State>::Stop() {
   if (is_running_) {
     for (auto &[type, handler] : handlers_) {
-      handler->stop();
-      handler->stopInternal();
+      handler->Stop();
+      handler->StopInternal();
     }
 
     std::exchange(is_running_, false);
@@ -90,13 +90,13 @@ void maelstrom::detail::HandlersProcessor<State>::stop() {
 }
 
 template <typename State>
-void maelstrom::detail::HandlersProcessor<State>::useTransport(
-    std::shared_ptr<ITransport> transport) {
+void maelstrom::detail::HandlersProcessor<State>::UseTransport(
+  std::shared_ptr<ITransport> transport) {
   transport_ = std::move(transport);
 }
 
 template <typename State>
-void maelstrom::detail::HandlersProcessor<State>::process(Request request) {
+void maelstrom::detail::HandlersProcessor<State>::Process(Request request) {
   auto type = request.type;
 
   auto it = handlers_.find(type);
@@ -106,21 +106,21 @@ void maelstrom::detail::HandlersProcessor<State>::process(Request request) {
   }
 
   std::ignore = yaclib::Run(
-      executor_,
-      [this, type, it,
-       request = std::move(request)]() mutable -> yaclib::Future<> {
-        try {
-          auto session = network_.makeSession();
+    executor_,
+    [this, type, it,
+     request = std::move(request)]() mutable -> yaclib::Future<> {
+      try {
+        auto session = network_.MakeSession();
 
-          const auto &handler = it->second;
-          auto response =
-              co_await handler->handle(std::move(session), std::move(request));
+        const auto &handler = it->second;
+        auto response =
+          co_await handler->Handle(std::move(session), std::move(request));
 
-          transport_->send(std::move(response).toMessage());
-        } catch (const std::exception &ex) {
-          LOG_ERROR() << fmt::format(
-              "Exception occurs, when processing handler '{}', ex: {}\n", type,
-              ex.what());
-        }
-      });
+        transport_->Send(std::move(response).ToMessage());
+      } catch (const std::exception &ex) {
+        LOG_ERROR() << fmt::format(
+          "Exception occurs, when processing handler '{}', ex: {}\n", type,
+          ex.what());
+      }
+    });
 }

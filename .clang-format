@@ -1,4 +1,4 @@
-AllowShortLambdasOnASingleLineIni: Inline
+AllowShortLambdasOnASingleLine: Inline
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false

@@ -21,22 +21,23 @@ public:
 
 public:
   explicit WorkerBase(Clock::duration period);
+
   virtual ~WorkerBase() = default;
 
-  virtual void start();
-  virtual void stop();
+  virtual void Start();
+  virtual void Stop();
 
-  virtual yaclib::Future<> process(Network::Session session) = 0;
+  virtual yaclib::Future<> Process(Network::Session session) = 0;
 
 protected:
-  [[nodiscard]] std::shared_ptr<State> getState() const;
-  [[nodiscard]] const Environment &getEnvironment() const;
+  [[nodiscard]] std::shared_ptr<State> GetState() const;
+  [[nodiscard]] const Environment &GetEnvironment() const;
 
 private:
   friend detail::WorkersProcessor<State>;
 
-  void startInternal(Environment env, std::shared_ptr<State> state);
-  void stopInternal();
+  void StartInternal(Environment env, std::shared_ptr<State> state);
+  void StopInternal();
 
 private:
   std::optional<Environment> env_{std::nullopt};
@@ -56,32 +57,32 @@ private:
 
 template <typename Worker, typename State>
 concept IsWorker =
-    std::derived_from<Worker, WorkerBase<State>> && requires(Worker worker) {
-      { Worker::type };
-    };
+  std::derived_from<Worker, WorkerBase<State>> && requires(Worker worker) {
+    { Worker::kType };
+  };
 
 } // namespace maelstrom
 
 template <typename State>
 maelstrom::WorkerBase<State>::WorkerBase(Clock::duration period)
-    : period_{period} {}
+  : period_{period} {}
 
-template <typename State> void maelstrom::WorkerBase<State>::start() {}
+template <typename State> void maelstrom::WorkerBase<State>::Start() {}
 
-template <typename State> void maelstrom::WorkerBase<State>::stop() {}
+template <typename State> void maelstrom::WorkerBase<State>::Stop() {}
 
 template <typename State>
-void maelstrom::WorkerBase<State>::startInternal(Environment env,
+void maelstrom::WorkerBase<State>::StartInternal(Environment env,
                                                  std::shared_ptr<State> state) {
   env_.emplace(std::move(env));
   state_ = std::move(state);
   next_deadline_ = Clock::now() + period_;
 }
 
-template <typename State> void maelstrom::WorkerBase<State>::stopInternal() {}
+template <typename State> void maelstrom::WorkerBase<State>::StopInternal() {}
 
 template <typename State>
-std::shared_ptr<State> maelstrom::WorkerBase<State>::getState() const {
+std::shared_ptr<State> maelstrom::WorkerBase<State>::GetState() const {
   if (!state_) [[unlikely]] {
     LOG_ERROR() << "Cannot get state for uninitialized node!\n";
     throw std::runtime_error{"Cannot get state for uninitialized node!"};
@@ -92,7 +93,7 @@ std::shared_ptr<State> maelstrom::WorkerBase<State>::getState() const {
 
 template <typename State>
 const maelstrom::Environment &
-maelstrom::WorkerBase<State>::getEnvironment() const {
+maelstrom::WorkerBase<State>::GetEnvironment() const {
   if (!env_.has_value()) [[unlikely]] {
     LOG_ERROR() << "Cannot get environment for uninitialized node!\n";
     throw std::runtime_error{"Cannot get environment for uninitialized node!"};

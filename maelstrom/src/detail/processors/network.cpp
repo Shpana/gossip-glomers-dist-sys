@@ -1,25 +1,26 @@
-#include <maelstrom/detail/processors/network.hpp>
-
 #include <fmt/format.h>
 #include <yaclib/async/contract.hpp>
 #include <yaclib/util/result.hpp>
 
+#include <maelstrom/detail/processors/network.hpp>
 #include <maelstrom/network/messages.hpp>
 
 namespace maelstrom::detail {
 
 namespace {
+
 using namespace std::chrono_literals;
-constexpr NetworkProcessor::Clock::duration repeat_threshold{500ms};
+constexpr NetworkProcessor::Clock::duration kRepeatThreshold{500ms};
+
 } // namespace
 
-void NetworkProcessor::start() {
+void NetworkProcessor::Start() {
   std::exchange(is_running_, true);
 
-  assistant_ = std::thread{[this]() { backgroundUpdate(); }};
+  assistant_ = std::thread{[this]() { BackgroundUpdate(); }};
 }
 
-void NetworkProcessor::stop() {
+void NetworkProcessor::Stop() {
   std::exchange(is_running_, false);
 
   if (assistant_.joinable()) {
@@ -27,21 +28,21 @@ void NetworkProcessor::stop() {
   }
 }
 
-void NetworkProcessor::process(Response response) {
-  if (processInternal(once_, response)) {
+void NetworkProcessor::Process(Response response) {
+  if (ProcessInternal(once_, response)) {
     return;
   }
-  if (processInternal(at_least_once_, response)) {
+  if (ProcessInternal(at_least_once_, response)) {
     return;
   }
 }
 
-void NetworkProcessor::useTransport(std::shared_ptr<ITransport> transport) {
+void NetworkProcessor::UseTransport(std::shared_ptr<ITransport> transport) {
   transport_ = std::move(transport);
 }
 
 template <WaitPolicy P>
-bool NetworkProcessor::processInternal(Waiters<P> &waiters,
+bool NetworkProcessor::ProcessInternal(Waiters<P> &waiters,
                                        Response &response) {
   yaclib::Promise<Response> p;
 
@@ -61,36 +62,36 @@ bool NetworkProcessor::processInternal(Waiters<P> &waiters,
   return true;
 }
 
-void NetworkProcessor::send(Request request) {
-  callDetachedInternal(std::move(request));
+void NetworkProcessor::Send(Request request) {
+  CallDetachedInternal(std::move(request));
 }
 
-void NetworkProcessor::sendAtLeastOnce(Request request,
+void NetworkProcessor::SendAtLeastOnce(Request request,
                                        std::optional<Clock::duration> timeout) {
-  std::ignore = callAtLeastOnceInternal(std::move(request), timeout);
+  std::ignore = CallAtLeastOnceInternal(std::move(request), timeout);
 }
 
 yaclib::Future<Response>
-NetworkProcessor::call(Request request,
+NetworkProcessor::Call(Request request,
                        std::optional<Clock::duration> timeout) {
-  return callOnceInternal(std::move(request), timeout);
+  return CallOnceInternal(std::move(request), timeout);
 }
 
 yaclib::Future<Response>
-NetworkProcessor::callAtLeastOnce(Request request,
+NetworkProcessor::CallAtLeastOnce(Request request,
                                   std::optional<Clock::duration> timeout) {
-  return callAtLeastOnceInternal(std::move(request), timeout);
+  return CallAtLeastOnceInternal(std::move(request), timeout);
 }
 
-void NetworkProcessor::callDetachedInternal(Request request) {
-  transport_->send(std::move(request).toMessage());
+void NetworkProcessor::CallDetachedInternal(Request request) {
+  transport_->Send(std::move(request).ToMessage());
 }
 
 yaclib::Future<Response>
-NetworkProcessor::callOnceInternal(Request request,
+NetworkProcessor::CallOnceInternal(Request request,
                                    std::optional<Clock::duration> timeout) {
   auto id = request.message_id;
-  transport_->send(std::move(request).toMessage());
+  transport_->Send(std::move(request).ToMessage());
 
   auto [f, p] = yaclib::MakeContract<Response>();
 
@@ -103,17 +104,17 @@ NetworkProcessor::callOnceInternal(Request request,
     std::lock_guard guard{mtx_};
 
     once_.emplace(
-        id, Waiter<WaitPolicy::Once>{.p = std::move(p), .deadline = deadline});
+      id, Waiter<WaitPolicy::Once>{.p = std::move(p), .deadline = deadline});
   }
 
   return std::move(f);
 }
 
-yaclib::Future<Response> NetworkProcessor::callAtLeastOnceInternal(
-    Request request, std::optional<Clock::duration> timeout) {
+yaclib::Future<Response> NetworkProcessor::CallAtLeastOnceInternal(
+  Request request, std::optional<Clock::duration> timeout) {
   auto id = request.message_id;
   auto request_copy = request;
-  transport_->send(std::move(request).toMessage());
+  transport_->Send(std::move(request).ToMessage());
 
   auto [f, p] = yaclib::MakeContract<Response>();
 
@@ -127,46 +128,46 @@ yaclib::Future<Response> NetworkProcessor::callAtLeastOnceInternal(
   {
     std::lock_guard guard{mtx_};
     at_least_once_.emplace(id, Waiter<WaitPolicy::AtLeastOnce>{
-                                   .p = std::move(p),
-                                   .updated_at = now,
-                                   .deadline = deadline,
-                                   .request_copy = std::move(request_copy)});
+                                 .p = std::move(p),
+                                 .updated_at = now,
+                                 .deadline = deadline,
+                                 .request_copy = std::move(request_copy)});
   }
 
   return std::move(f);
 }
 
-void NetworkProcessor::backgroundUpdate() {
+void NetworkProcessor::BackgroundUpdate() {
   while (is_running_) {
-    updateOnce();
-    updateAtLeastOnce();
+    UpdateOnce();
+    UpdateAtLeastOnce();
     // TODO(shpana): handle deadlines more precisely
-    std::this_thread::sleep_for(repeat_threshold);
+    std::this_thread::sleep_for(kRepeatThreshold);
   }
 }
 
-void NetworkProcessor::updateOnce() {
+void NetworkProcessor::UpdateOnce() {
   auto now = Clock::now();
 
   {
     std::lock_guard guard{mtx_};
-    eraseExpiredDeadlines(once_, now);
+    EraseExpiredDeadlines(once_, now);
   }
 }
 
-void NetworkProcessor::updateAtLeastOnce() {
+void NetworkProcessor::UpdateAtLeastOnce() {
   auto now = Clock::now();
 
   {
     std::lock_guard guard{mtx_};
 
-    eraseExpiredDeadlines(at_least_once_, now);
+    EraseExpiredDeadlines(at_least_once_, now);
 
     for (auto &[id, waiter] : at_least_once_) {
-      if (waiter.updated_at + repeat_threshold < now) {
+      if (waiter.updated_at + kRepeatThreshold < now) {
         auto request = waiter.request_copy;
         auto id = request.message_id;
-        transport_->send(std::move(request).toMessage());
+        transport_->Send(std::move(request).ToMessage());
 
         waiter.updated_at = now;
       }
@@ -175,7 +176,7 @@ void NetworkProcessor::updateAtLeastOnce() {
 }
 
 template <WaitPolicy P>
-void NetworkProcessor::eraseExpiredDeadlines(Waiters<P> &waiters,
+void NetworkProcessor::EraseExpiredDeadlines(Waiters<P> &waiters,
                                              Clock::time_point now) {
   for (auto &[id, waiter] : waiters) {
     if (waiter.deadline.has_value() && waiter.deadline.value() < now) {
@@ -185,7 +186,7 @@ void NetworkProcessor::eraseExpiredDeadlines(Waiters<P> &waiters,
                                     .what = "Timeout",
                                     .body = nlohmann::json({}),
                                     .in_reply_to = id}
-                                  .toResponse());
+                                .ToResponse());
     }
   }
 

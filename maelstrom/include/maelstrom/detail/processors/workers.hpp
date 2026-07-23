@@ -18,13 +18,13 @@ template <typename State> class WorkersProcessor {
 public:
   explicit WorkersProcessor(yaclib::IExecutor &executor, Network &network);
 
-  template <IsWorker<State> Handler, typename... Args> void add(Args &&...args);
+  template <IsWorker<State> Handler, typename... Args> void Add(Args &&...args);
 
-  void start(Environment env, std::shared_ptr<State> state);
-  void stop();
+  void Start(Environment env, std::shared_ptr<State> state);
+  void Stop();
 
 private:
-  void backgroundProcess();
+  void BackgroundProcess();
 
 private:
   bool is_running_{false};
@@ -36,56 +36,56 @@ private:
   Network &network_;
 
   std::unordered_map<std::string, std::unique_ptr<WorkerBase<State>>>
-      workers_{};
+    workers_{};
 };
 
 } // namespace maelstrom::detail
 
 template <typename State>
 maelstrom::detail::WorkersProcessor<State>::WorkersProcessor(
-    yaclib::IExecutor &executor, Network &network)
-    : executor_{executor}, network_{network} {}
+  yaclib::IExecutor &executor, Network &network)
+  : executor_{executor}, network_{network} {}
 
 template <typename State>
 template <maelstrom::IsWorker<State> Worker, typename... Args>
-void maelstrom::detail::WorkersProcessor<State>::add(Args &&...args) {
+void maelstrom::detail::WorkersProcessor<State>::Add(Args &&...args) {
   if (is_running_) {
     LOG_ERROR() << fmt::format(
-        "Cannot add worker '{}', node already started!\n", Worker::type);
+      "Cannot add worker '{}', node already started!\n", Worker::kType);
     return;
   }
 
   auto worker = std::make_unique<Worker>(std::forward<Args>(args)...);
-  workers_[std::string{Worker::type}] = std::move(worker);
+  workers_[std::string{Worker::kType}] = std::move(worker);
   LOG_INFO() << fmt::format("Worker '{}' was added to node registry!\n",
-                            Worker::type);
+                            Worker::kType);
 }
 
 template <typename State>
-void maelstrom::detail::WorkersProcessor<State>::start(
-    Environment env, std::shared_ptr<State> state) {
+void maelstrom::detail::WorkersProcessor<State>::Start(
+  Environment env, std::shared_ptr<State> state) {
   std::exchange(is_running_, true);
 
   for (auto &[type, worker] : workers_) {
-    worker->startInternal(env, state);
-    worker->start();
+    worker->StartInternal(env, state);
+    worker->Start();
   }
 
   assistant_ = std::thread{[this]() {
     while (is_running_) {
-      backgroundProcess();
+      BackgroundProcess();
     }
   }};
 }
 
 template <typename State>
-void maelstrom::detail::WorkersProcessor<State>::stop() {
+void maelstrom::detail::WorkersProcessor<State>::Stop() {
   if (is_running_) {
     std::exchange(is_running_, false);
 
     for (auto &[type, worker] : workers_) {
-      worker->stop();
-      worker->stopInternal();
+      worker->Stop();
+      worker->StopInternal();
     }
 
     if (assistant_.joinable()) {
@@ -95,7 +95,7 @@ void maelstrom::detail::WorkersProcessor<State>::stop() {
 }
 
 template <typename State>
-void maelstrom::detail::WorkersProcessor<State>::backgroundProcess() {
+void maelstrom::detail::WorkersProcessor<State>::BackgroundProcess() {
   using Clock = WorkerBase<State>::Clock;
   using namespace std::chrono_literals;
 
@@ -112,22 +112,22 @@ void maelstrom::detail::WorkersProcessor<State>::backgroundProcess() {
 
     if (worker->next_deadline_.load() < now &&
         worker->exec_state_.compare_exchange_strong(
-            guess, ExecutionState::InProgress)) {
+          guess, ExecutionState::InProgress)) {
 
       std::ignore = yaclib::Run(
-          executor_, [this, type, &worker]() mutable -> yaclib::Future<> {
-            try {
-              auto session = network_.makeSession();
-              co_await worker->process(std::move(session));
-            } catch (const std::exception &ex) {
-              LOG_ERROR() << fmt::format(
-                  "Exception occurs, when processing worker '{}', ex: {}\n",
-                  type, ex.what());
-            }
+        executor_, [this, type, &worker]() mutable -> yaclib::Future<> {
+          try {
+            auto session = network_.MakeSession();
+            co_await worker->Process(std::move(session));
+          } catch (const std::exception &ex) {
+            LOG_ERROR() << fmt::format(
+              "Exception occurs, when processing worker '{}', ex: {}\n", type,
+              ex.what());
+          }
 
-            worker->exec_state_.store(ExecutionState::Idle);
-            worker->next_deadline_.store(Clock::now() + worker->period_);
-          });
+          worker->exec_state_.store(ExecutionState::Idle);
+          worker->next_deadline_.store(Clock::now() + worker->period_);
+        });
     }
   }
 

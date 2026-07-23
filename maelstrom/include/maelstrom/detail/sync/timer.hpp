@@ -20,16 +20,16 @@ class Timer {
 public:
   explicit Timer(yaclib::IExecutor &executor);
 
-  void start();
-  void stop();
+  void Start();
+  void Stop();
 
-  void submit(Action &&action);
+  void Submit(Action &&action);
 
-  void set(Clock::duration delay, Action &&action);
-  void set(Clock::time_point deadline, Action &&action);
+  void Set(Clock::duration delay, Action &&action);
+  void Set(Clock::time_point deadline, Action &&action);
 
 private:
-  void process();
+  void Process();
 
 private:
   std::atomic<bool> is_running_{false};

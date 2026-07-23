@@ -1,5 +1,4 @@
 #include "node.hpp"
-
 #include "operations.hpp"
 
 int main() {

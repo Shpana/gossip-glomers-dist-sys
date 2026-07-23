@@ -7,24 +7,24 @@ namespace maelstrom {
 
 class InMemoryTransport final : public ITransport {
 public:
-  void start() override;
-  void stop() override;
+  void Start() override;
+  void Stop() override;
 
-  void send(Message message) override;
-  std::optional<Message> recieve() override;
+  void Send(Message message) override;
+  std::optional<Message> Recieve() override;
 
-  [[nodiscard]] bool isRunning() const override;
-  [[nodiscard]] bool isStreaming() const override;
+  [[nodiscard]] bool IsRunning() const override;
+  [[nodiscard]] bool IsStreaming() const override;
 
-  void startStreaming();
-  void stopStreaming();
+  void StartStreaming();
+  void StopStreaming();
 
-  void push(Message message);
-  std::optional<Message> pop();
+  void Push(Message message);
+  std::optional<Message> Pop();
 
-  [[nodiscard]] std::size_t infligthResponses() const;
-  [[nodiscard]] bool hasInflightResponses() const;
-  [[nodiscard]] bool hasNoInflightResponses() const;
+  [[nodiscard]] std::size_t InfligthResponses() const;
+  [[nodiscard]] bool HasInflightResponses() const;
+  [[nodiscard]] bool HasNoInflightResponses() const;
 
 private:
   std::atomic<bool> is_running_{false};
