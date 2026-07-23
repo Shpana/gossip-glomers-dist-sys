@@ -15,6 +15,6 @@ int main() {
   node.Add<tasks::broadcast::part4::BroadcastBulkHandler>();
   node.Add<tasks::broadcast::part4::ReadHandler>();
   node.Add<tasks::broadcast::part4::TopologyHandler>();
-  node.Add<tasks::broadcast::part4::DistributorWorker>(500ms);
+  node.Add<tasks::broadcast::part4::DistributorWorker>(250ms);
   node.Run();
 }

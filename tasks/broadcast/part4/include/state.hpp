@@ -22,10 +22,7 @@ struct State {
   } storage;
 
   struct {
-    std::atomic<bool> ready{false};
-
     std::mutex mtx{};
-    std::vector<std::string> all_node_ids{}; // Guarded by mtx
     std::unordered_map<std::string, std::vector<std::string>>
       topology{}; // Guarded by mtx
   } info;

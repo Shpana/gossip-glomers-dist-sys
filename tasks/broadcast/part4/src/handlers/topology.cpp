@@ -17,13 +17,7 @@ TopologyHandler::Handle(maelstrom::Network::Session session,
   {
     std::lock_guard guard{info.mtx};
     info.topology = std::move(topology);
-
-    for (auto &[node_id, neighbours] : info.topology) {
-      info.all_node_ids.push_back(node_id);
-    }
   }
-
-  info.ready.store(true);
 
   return yaclib::MakeFuture(std::move(request).ToResponse());
 }
