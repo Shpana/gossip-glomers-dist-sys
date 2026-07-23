@@ -4,7 +4,7 @@
 
 #include <maelstrom/routines/handler.hpp>
 
-namespace tasks::broadcast::part5 {
+namespace tasks::broadcast::part4 {
 
 class BroadcastHandler final : public maelstrom::HandlerBase<State> {
 public:
@@ -24,4 +24,4 @@ public:
          maelstrom::Request request) override;
 };
 
-} // namespace tasks::broadcast::part5
+} // namespace tasks::broadcast::part4

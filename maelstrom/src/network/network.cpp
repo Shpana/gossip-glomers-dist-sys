@@ -23,17 +23,27 @@ std::uint64_t Network::GenerateNextId() {
 
 Network::Session::Session(Network &network) : network_{network} {}
 
-void Network::Session::Send(std::string type, std::string destination,
-                            nlohmann::json body) {
-  network_.processor_.Send(
+void Network::Session::SendDetached(std::string type, std::string destination,
+                                    nlohmann::json body) {
+  return network_.processor_.SendDetached(
     MakeRequest(std::move(type), std::move(destination), std::move(body)));
 }
 
-void Network::Session::SendAtLeastOnce(std::string type,
-                                       std::string destination,
-                                       nlohmann::json body) {
-  network_.processor_.SendAtLeastOnce(
-    MakeRequest(std::move(type), std::move(destination), std::move(body)));
+yaclib::Future<>
+Network::Session::Send(std::string type, std::string destination,
+                       nlohmann::json body,
+                       std::optional<Network::Clock::duration> timeout) {
+  return network_.processor_.Send(
+    MakeRequest(std::move(type), std::move(destination), std::move(body)),
+    timeout);
+}
+
+yaclib::Future<> Network::Session::SendAtLeastOnce(
+  std::string type, std::string destination, nlohmann::json body,
+  std::optional<Network::Clock::duration> timeout) {
+  return network_.processor_.SendAtLeastOnce(
+    MakeRequest(std::move(type), std::move(destination), std::move(body)),
+    timeout);
 }
 
 yaclib::Future<Response> Network::Session::Session::Call(

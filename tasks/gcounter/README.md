@@ -2,7 +2,8 @@
 
 - Каждая нода пишет в свою ячейку kv-storage'а, чтобы минимизировать contention (в частности при кратном увеличении количества нод).
 - `add`-запросы в CAS-цикле пытаются увеличить счетчик на полученное `delta`.
-- `read`-запросы читают все значения из соответсвующих нодам ячеек. Причем так как kv-storage только sequential consistent, то перед каждым чтением делается фиктивный CAS-запрос, чтобы установить progam-order для последующих чтений.
+- `read`-запросы читают все значения из соответсвующих нодам ячеек. 
+- Так как kv-storage только sequential consistent, то без дополнительной синхронизации program order'а нужных гарантий консистентности не получить. Для обеспечения program order'а был добавлен background worker, который каждую секунду делает фиктивные CAS запросы к kv-storage. Так как мы хотим полуить только eventyally consistency в течении нескольких секунд, то это нас устраиват.
 
 ## Оптимизации
 
@@ -10,10 +11,8 @@
 Так как наш сервис должен быть eventualy consistent, причем разрешается задерживать обновление счетчика на несколько секунд, то можно кэшировать `read`-запросы.
 
 При `cache_invalidation_timeout=1s` latency `read`-запросов становится лучше
-<p align="center">
-  <img src="/tasks/gcounter/assets/latency-no-cache.png" alt="Without cache" width="49%"/>
-  <img src="/tasks/gcounter/assets/latency-cache.png" alt="With cache" width="49%"/> 
-</p>
+<img src="/tasks/gcounter/assets/latency-no-cache.png" alt="Without cache" width="100%"/>
+<img src="/tasks/gcounter/assets/latency-cache.png" alt="With cache" width="100%"/> 
 
 Среднее количество сообщений на операцию `msg-per-ops` при включенном кэшировании уменьшается с 55 до 16.
 

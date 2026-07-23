@@ -10,12 +10,11 @@
 int main() {
   using namespace std::chrono_literals;
 
-  // TODO(shpana): fix bugs
-  maelstrom::Node<tasks::broadcast::part5::State> node{};
-  node.Add<tasks::broadcast::part5::BroadcastHandler>();
-  node.Add<tasks::broadcast::part5::BroadcastBulkHandler>();
-  node.Add<tasks::broadcast::part5::ReadHandler>();
-  node.Add<tasks::broadcast::part5::TopologyHandler>();
-  node.Add<tasks::broadcast::part5::DistributorWorker>(500ms);
+  maelstrom::Node<tasks::broadcast::part4::State> node{};
+  node.Add<tasks::broadcast::part4::BroadcastHandler>();
+  node.Add<tasks::broadcast::part4::BroadcastBulkHandler>();
+  node.Add<tasks::broadcast::part4::ReadHandler>();
+  node.Add<tasks::broadcast::part4::TopologyHandler>();
+  node.Add<tasks::broadcast::part4::DistributorWorker>(250ms);
   node.Run();
 }

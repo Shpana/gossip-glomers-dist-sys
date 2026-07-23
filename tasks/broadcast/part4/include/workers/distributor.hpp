@@ -12,7 +12,11 @@ public:
 
   using maelstrom::WorkerBase<State>::WorkerBase;
 
+  void Start() override;
   yaclib::Future<> Process(maelstrom::Network::Session session) override;
+
+private:
+  std::vector<std::string> node_ids_for_notify_{};
 };
 
 } // namespace tasks::broadcast::part4
