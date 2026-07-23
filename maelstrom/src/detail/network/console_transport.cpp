@@ -1,4 +1,4 @@
-#include "network/transport/console_transport.hpp"
+#include "detail/network/console_transport.hpp"
 
 #include "log/logging.hpp"
 
@@ -18,7 +18,7 @@ namespace maelstrom {
     LOG_DEBUG() << "<- " << json << std::endl;
 
     {
-      std::lock_guard guard{out_mtx_};
+      std::lock_guard guard{mtx_};
       std::cout << json << std::endl;
     }
   }
@@ -46,13 +46,11 @@ namespace maelstrom {
     return message;
   }
 
-  void ConsoleTransport::stopStreaming() { std::cout << std::endl; }
+  [[nodiscard]] bool ConsoleTransport::isRunning() const {
+    return is_running_.load();
+  }
 
   [[nodiscard]] bool ConsoleTransport::isStreaming() const {
     return !end_of_stream_.load();
-  }
-
-  [[nodiscard]] bool ConsoleTransport::isRunning() const {
-    return is_running_.load();
   }
 }// namespace maelstrom

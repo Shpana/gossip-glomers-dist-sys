@@ -1,7 +1,7 @@
 #pragma once
 
 #include "detail/sync/queue.hpp"
-#include "network/transport/transport.hpp"
+#include "detail/network/transport.hpp"
 
 namespace maelstrom {
   class InMemoryTransport final : public ITransport {
@@ -12,21 +12,22 @@ namespace maelstrom {
     void send(Message message) override;
     std::optional<Message> recieve() override;
 
-    void stopStreaming() override;
+    [[nodiscard]] bool isRunning() const override;
     [[nodiscard]] bool isStreaming() const override;
 
-    [[nodiscard]] bool isRunning() const override;
+    void startStreaming();
+    void stopStreaming();
 
     void push(Message message);
     std::optional<Message> pop();
 
-    // TODO(shpana): better name?
-    [[nodiscard]] bool hasNoResponses() const;
     [[nodiscard]] std::size_t infligthResponses() const;
+    [[nodiscard]] bool hasInflightResponses() const;
+    [[nodiscard]] bool hasNoInflightResponses() const;
 
   private:
     std::atomic<bool> is_running_{false};
-    std::atomic<bool> end_of_stream_{false};
+    std::atomic<bool> end_of_stream_{true};
 
     detail::UnboundedBlockingQueue<Message> in_;
     detail::UnboundedBlockingQueue<Message> out_;

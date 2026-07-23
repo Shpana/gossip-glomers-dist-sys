@@ -4,8 +4,8 @@
 #include <yaclib/async/promise.hpp>
 #include <yaclib/exe/executor.hpp>
 
+#include "detail/network/transport.hpp"
 #include "network/messages.hpp"
-#include "network/transport/transport.hpp"
 
 namespace maelstrom::detail {
   enum struct WaitPolicy { Detached = 0, Once, AtLeastOnce };
@@ -22,12 +22,12 @@ namespace maelstrom::detail {
     using Waiters = std::unordered_map<std::uint64_t, Waiter<P>>;
 
   public:
-    explicit NetworkProcessor(ITransport& transport);
-
     void start();
     void stop();
 
     void process(Response response);
+
+    void useTransport(std::shared_ptr<ITransport> transport);
 
     void send(Request request);
     void sendAtLeastOnce(Request request,
@@ -68,7 +68,7 @@ namespace maelstrom::detail {
     // TODO(shpana): move to timers
     std::thread assistant_;
 
-    ITransport& transport_;
+    std::shared_ptr<ITransport> transport_;
 
     std::mutex mtx_{};
     Waiters<WaitPolicy::Once> once_{};                // Guarded by mtx_

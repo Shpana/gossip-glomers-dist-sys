@@ -4,8 +4,8 @@
 
 #include <yaclib/async/make.hpp>
 
+#include "detail/network/in_memory_transport.hpp"
 #include "network/messages.hpp"
-#include "network/transport/in_memory_transport.hpp"
 #include "node.hpp"
 #include "routines/handler.hpp"
 #include "utils/unit.hpp"
@@ -15,8 +15,8 @@ namespace maelstrom::tests {
   public:
     static constexpr std::string_view type = "echo";
 
-    yaclib::Future<Response> handle(Network::Session&& session,
-                                    Request&& request) override {
+    yaclib::Future<Response> handle(Network::Session session,
+                                    Request request) override {
       auto echo = nlohmann::json({});
       echo["message"] = request.body["message"].get<std::string>();
       return yaclib::MakeFuture(std::move(request).toResponse(std::move(echo)));
@@ -38,8 +38,9 @@ protected:
   void SetUp() override {
     transport_ = std::make_shared<maelstrom::InMemoryTransport>();
 
-    node_ = std::make_shared<maelstrom::Node<maelstrom::Unit>>(transport_);
+    node_ = std::make_shared<maelstrom::Node<maelstrom::Unit>>();
     node_->add<maelstrom::tests::EchoHandler>();
+    node_->useTransport(transport_);
 
     assistant_ = std::thread{[this, node = node_]() {
       try {
@@ -74,7 +75,7 @@ protected:
       assistant_.join();
     }
 
-    EXPECT_TRUE(transport_->hasNoResponses());
+    EXPECT_TRUE(transport_->hasNoInflightResponses());
     EXPECT_FALSE(hasNotCatchedExceptions());
 
     transport_.reset();

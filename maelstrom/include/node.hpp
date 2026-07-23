@@ -8,14 +8,14 @@
 #include <yaclib/coro/future.hpp>
 #include <yaclib/runtime/fair_thread_pool.hpp>
 
+#include "detail/network/console_transport.hpp"
+#include "detail/network/transport.hpp"
 #include "detail/processors/handlers.hpp"
 #include "detail/processors/network.hpp"
 #include "detail/processors/workers.hpp"
 #include "environment.hpp"
 #include "log/logging.hpp"
 #include "network/network.hpp"
-#include "network/transport/console_transport.hpp"
-#include "network/transport/transport.hpp"
 
 namespace maelstrom {
   template<typename State>
@@ -23,13 +23,14 @@ namespace maelstrom {
                      private detail::HandlersProcessor<State>,
                      private detail::WorkersProcessor<State> {
   public:
-    explicit Node(std::shared_ptr<ITransport> transport =
-                      std::make_shared<ConsoleTransport>());
+    Node();
 
     void run();
 
     using detail::HandlersProcessor<State>::add;
     using detail::WorkersProcessor<State>::add;
+
+    void useTransport(std::shared_ptr<ITransport> transport);
 
   private:
     bool loadEnvironment();
@@ -39,7 +40,8 @@ namespace maelstrom {
   private:
     yaclib::FairThreadPool cpu_pool_;
 
-    std::shared_ptr<ITransport> transport_;
+    std::shared_ptr<ITransport> transport_ =
+        std::make_shared<ConsoleTransport>();
     Network network_;
 
     std::optional<Environment> env_{std::nullopt};
@@ -47,12 +49,16 @@ namespace maelstrom {
   };
 
   template<typename State>
-  Node<State>::Node(std::shared_ptr<ITransport> transport)
-      : detail::NetworkProcessor{*transport},
-        detail::HandlersProcessor<State>{cpu_pool_, *transport, network_},
+  Node<State>::Node()
+      : detail::NetworkProcessor{},
+        detail::HandlersProcessor<State>{cpu_pool_, network_},
         detail::WorkersProcessor<State>{cpu_pool_, network_},
-        cpu_pool_{yaclib::FairThreadPool{1}}, transport_{std::move(transport)},
-        network_{*this} {}
+        cpu_pool_{yaclib::FairThreadPool{1}}, network_{*this} {}
+
+  template<typename State>
+  void Node<State>::useTransport(std::shared_ptr<ITransport> transport) {
+    transport_ = std::move(transport);
+  }
 
   template<typename State>
   bool Node<State>::loadEnvironment() {
@@ -101,6 +107,9 @@ namespace maelstrom {
     }
 
     network_.start(env_.value());
+
+    detail::NetworkProcessor::useTransport(transport_);
+    detail::HandlersProcessor<State>::useTransport(transport_);
 
     state_ = std::make_shared<State>();
     detail::NetworkProcessor::start();

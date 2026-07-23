@@ -6,6 +6,7 @@
 #include <yaclib/async/future.hpp>
 
 #include "environment.hpp"
+#include "log/logging.hpp"
 #include "network/network.hpp"
 
 namespace maelstrom {
@@ -29,6 +30,30 @@ namespace maelstrom {
     virtual void stop() {}
 
   protected:
+    [[nodiscard]] std::shared_ptr<State> getState() const {
+      if (!state_) [[unlikely]] {
+        LOG_ERROR() << "Cannot get state for uninitialized node!\n";
+        throw std::runtime_error{"Cannot get state for uninitialized node!"};
+      }
+      return state_;
+    }
+
+    [[nodiscard]] const Environment& getEnvironment() const {
+      if (!env_.has_value()) [[unlikely]] {
+        LOG_ERROR() << "Cannot get environment for uninitialized node!\n";
+        throw std::runtime_error{
+            "Cannot get environment for uninitialized node!"};
+      }
+      return env_.value();
+    }
+
+  private:
+    friend detail::WorkersProcessor<State>;
+
+    void startInternal(Environment env, std::shared_ptr<State> state);
+    void stopInternal();
+
+  private:
     std::optional<Environment> env_{std::nullopt};
     std::shared_ptr<State> state_;
 
@@ -39,12 +64,6 @@ namespace maelstrom {
     enum struct ExecutionState { Idle = 0, InProgress };
 
     std::atomic<ExecutionState> exec_state_{ExecutionState::Idle};
-
-  private:
-    friend detail::WorkersProcessor<State>;
-
-    void startInternal(Environment env, std::shared_ptr<State> state);
-    void stopInternal();
   };
 
   template<typename State>

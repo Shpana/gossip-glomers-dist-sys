@@ -36,9 +36,9 @@ namespace maelstrom {
   template<typename V, Consistency C>
   class KeyValueStorage : public detail::Type<C> {
   public:
-    static constexpr std::string_view read_type = "read";
-    static constexpr std::string_view write_type = "write";
-    static constexpr std::string_view cas_type = "cas";
+    class ReadHandler;
+    class WriteHandler;
+    class CompareAndSwapHandler;
 
   public:
     explicit KeyValueStorage(Network::Session& session);
@@ -58,6 +58,21 @@ namespace maelstrom {
   };
 
   template<typename V, Consistency C>
+  class KeyValueStorage<V, C>::ReadHandler {
+    static constexpr std::string_view type = "read";
+  };
+
+  template<typename V, Consistency C>
+  class KeyValueStorage<V, C>::WriteHandler {
+    static constexpr std::string_view type = "write";
+  };
+
+  template<typename V, Consistency C>
+  class KeyValueStorage<V, C>::CompareAndSwapHandler {
+    static constexpr std::string_view type = "cas";
+  };
+
+  template<typename V, Consistency C>
   KeyValueStorage<V, C>::KeyValueStorage(Network::Session& session)
       : session_{session} {}
 
@@ -68,9 +83,8 @@ namespace maelstrom {
     auto body = nlohmann::json({});
     body["key"] = std::move(key);
 
-    auto response = co_await session_.call(std::string{read_type},
-                                           std::string{KeyValueStorage::type},
-                                           std::move(body), timeout);
+    auto response = co_await session_.call<ReadHandler>(
+        std::string{KeyValueStorage::type}, std::move(body), timeout);
 
     if (response.isError()) {
       co_return std::unexpected{std::move(response).toError().value()};
@@ -87,9 +101,8 @@ namespace maelstrom {
     body["key"] = std::move(key);
     body["value"] = std::move(value);
 
-    auto response = co_await session_.call(std::string{write_type},
-                                           std::string{KeyValueStorage::type},
-                                           std::move(body), timeout);
+    auto response = co_await session_.call<WriteHandler>(
+        std::string{KeyValueStorage::type}, std::move(body), timeout);
 
     if (response.isError()) {
       co_return std::move(response).toError().value();
@@ -108,9 +121,8 @@ namespace maelstrom {
     body["to"] = std::move(to);
     body["create_if_not_exists"] = create_if_not_exists;
 
-    auto response = co_await session_.call(std::string{cas_type},
-                                           std::string{KeyValueStorage::type},
-                                           std::move(body), timeout);
+    auto response = co_await session_.call<CompareAndSwapHandler>(
+        std::string{KeyValueStorage::type}, std::move(body), timeout);
 
     if (response.isError()) {
       co_return std::move(response).toError().value();

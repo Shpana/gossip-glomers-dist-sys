@@ -9,7 +9,6 @@
 #include <yaclib/coro/future.hpp>
 #include <yaclib/exe/executor.hpp>
 
-#include "detail/sync/timer.hpp"
 #include "environment.hpp"
 #include "routines/worker.hpp"
 
@@ -131,6 +130,6 @@ namespace maelstrom::detail {
     }
 
     // TODO(shpana): wake up on stopping
-    std::this_thread::sleep_for(100ms);
+    std::this_thread::sleep_for(50ms);
   }
 }// namespace maelstrom::detail

@@ -6,6 +6,7 @@
 #include <yaclib/async/future.hpp>
 
 #include "environment.hpp"
+#include "log/logging.hpp"
 #include "network/messages.hpp"
 #include "network/network.hpp"
 
@@ -26,14 +27,32 @@ namespace maelstrom {
     virtual void stop() {}
 
   protected:
-    std::optional<const Environment> env_{std::nullopt};
-    std::shared_ptr<State> state_;
+    [[nodiscard]] std::shared_ptr<State> getState() const {
+      if (!state_) [[unlikely]] {
+        LOG_ERROR() << "Cannot get state for uninitialized node!\n";
+        throw std::runtime_error{"Cannot get state for uninitialized node!"};
+      }
+      return state_;
+    }
+
+    [[nodiscard]] const Environment& getEnvironment() const {
+      if (!env_.has_value()) [[unlikely]] {
+        LOG_ERROR() << "Cannot get environment for uninitialized node!\n";
+        throw std::runtime_error{
+            "Cannot get environment for uninitialized node!"};
+      }
+      return env_.value();
+    }
 
   private:
     friend detail::HandlersProcessor<State>;
 
     void startInternal(Environment env, std::shared_ptr<State> state);
     void stopInternal();
+
+  private:
+    std::optional<const Environment> env_{std::nullopt};
+    std::shared_ptr<State> state_;
   };
 
   template<typename State>

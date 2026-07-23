@@ -13,9 +13,6 @@ namespace maelstrom::detail {
     constexpr NetworkProcessor::Clock::duration repeat_threshold{500ms};
   }// namespace
 
-  NetworkProcessor::NetworkProcessor(ITransport& transport)
-      : transport_{transport} {}
-
   void NetworkProcessor::start() {
     std::exchange(is_running_, true);
 
@@ -37,6 +34,10 @@ namespace maelstrom::detail {
     if (processInternal(at_least_once_, response)) {
       return;
     }
+  }
+
+  void NetworkProcessor::useTransport(std::shared_ptr<ITransport> transport) {
+    transport_ = std::move(transport);
   }
 
   template<WaitPolicy P>
@@ -83,14 +84,14 @@ namespace maelstrom::detail {
   }
 
   void NetworkProcessor::callDetachedInternal(Request request) {
-    transport_.send(std::move(request).toMessage());
+    transport_->send(std::move(request).toMessage());
   }
 
   yaclib::Future<Response>
   NetworkProcessor::callOnceInternal(Request request,
                                      std::optional<Clock::duration> timeout) {
     auto id = request.message_id;
-    transport_.send(std::move(request).toMessage());
+    transport_->send(std::move(request).toMessage());
 
     auto [f, p] = yaclib::MakeContract<Response>();
 
@@ -113,7 +114,7 @@ namespace maelstrom::detail {
       Request request, std::optional<Clock::duration> timeout) {
     auto id = request.message_id;
     auto request_copy = request;
-    transport_.send(std::move(request).toMessage());
+    transport_->send(std::move(request).toMessage());
 
     auto [f, p] = yaclib::MakeContract<Response>();
 
@@ -166,7 +167,7 @@ namespace maelstrom::detail {
         if (waiter.updated_at + repeat_threshold < now) {
           auto request = waiter.request_copy;
           auto id = request.message_id;
-          transport_.send(std::move(request).toMessage());
+          transport_->send(std::move(request).toMessage());
 
           waiter.updated_at = now;
         }

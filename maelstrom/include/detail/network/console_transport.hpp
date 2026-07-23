@@ -2,10 +2,9 @@
 
 #include <atomic>
 
-#include "network/transport/transport.hpp"
+#include "detail/network/transport.hpp"
 
 namespace maelstrom {
-
   class ConsoleTransport final : public ITransport {
   public:
     void start() override;
@@ -14,13 +13,11 @@ namespace maelstrom {
     void send(Message message) override;
     std::optional<Message> recieve() override;
 
-    void stopStreaming() override;
+    [[nodiscard]] bool isRunning() const override;
     [[nodiscard]] bool isStreaming() const override;
 
-    [[nodiscard]] bool isRunning() const override;
-
   private:
-    std::mutex out_mtx_{};
+    std::mutex mtx_{};// Guards access to std cout
     std::atomic<bool> is_running_{false};
     std::atomic<bool> end_of_stream_{false};
   };

@@ -1,4 +1,4 @@
-#include "network/transport/in_memory_transport.hpp"
+#include "detail/network/in_memory_transport.hpp"
 
 #include "log/logging.hpp"
 
@@ -23,14 +23,19 @@ namespace maelstrom {
     return in_.pop();
   }
 
-  void InMemoryTransport::stopStreaming() { in_.close(); }
+  void InMemoryTransport::startStreaming() { end_of_stream_.store(false); }
 
-  [[nodiscard]] bool InMemoryTransport::isStreaming() const {
-    return !in_.isClosed();
+  void InMemoryTransport::stopStreaming() {
+    end_of_stream_.store(true);
+    in_.close();
   }
 
   [[nodiscard]] bool InMemoryTransport::isRunning() const {
     return is_running_.load();
+  }
+
+  [[nodiscard]] bool InMemoryTransport::isStreaming() const {
+    return !in_.isClosed();
   }
 
   void InMemoryTransport::push(Message message) {
@@ -49,11 +54,15 @@ namespace maelstrom {
     return out_.pop();
   }
 
-  [[nodiscard]] bool InMemoryTransport::hasNoResponses() const {
-    return out_.isEmpty();
-  }
-
   [[nodiscard]] std::size_t InMemoryTransport::infligthResponses() const {
     return out_.size();
+  }
+
+  [[nodiscard]] bool InMemoryTransport::hasInflightResponses() const {
+    return !out_.isEmpty();
+  }
+
+  [[nodiscard]] bool InMemoryTransport::hasNoInflightResponses() const {
+    return out_.isEmpty();
   }
 }// namespace maelstrom

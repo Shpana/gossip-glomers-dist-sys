@@ -10,18 +10,17 @@
 #include <yaclib/coro/future.hpp>
 #include <yaclib/exe/executor.hpp>
 
+#include "detail/network/transport.hpp"
 #include "environment.hpp"
 #include "log/logging.hpp"
 #include "network/network.hpp"
-#include "network/transport/transport.hpp"
 #include "routines/handler.hpp"
 
 namespace maelstrom::detail {
   template<typename State>
   class HandlersProcessor {
   public:
-    HandlersProcessor(yaclib::IExecutor& executor, ITransport& transport,
-                      Network& network);
+    HandlersProcessor(yaclib::IExecutor& executor, Network& network);
 
     template<IsHandler<State> Handler, typename... Args>
     void add(Args&&... args);
@@ -31,12 +30,14 @@ namespace maelstrom::detail {
 
     void process(Request request);
 
+    void useTransport(std::shared_ptr<ITransport> transport);
+
   private:
     bool is_running_{false};
 
     yaclib::IExecutor& executor_;
 
-    ITransport& transport_;
+    std::shared_ptr<ITransport> transport_;
     Network& network_;
 
     std::unordered_map<std::string, std::unique_ptr<HandlerBase<State>>>
@@ -45,9 +46,8 @@ namespace maelstrom::detail {
 
   template<typename State>
   HandlersProcessor<State>::HandlersProcessor(yaclib::IExecutor& executor,
-                                              ITransport& transport,
                                               Network& network)
-      : executor_{executor}, transport_{transport}, network_{network} {}
+      : executor_{executor}, network_{network} {}
 
   template<typename State>
   template<IsHandler<State> Handler, typename... Args>
@@ -108,12 +108,18 @@ namespace maelstrom::detail {
             auto response = co_await handler->handle(std::move(session),
                                                      std::move(request));
 
-            transport_.send(std::move(response).toMessage());
+            transport_->send(std::move(response).toMessage());
           } catch (const std::exception& ex) {
             LOG_ERROR() << fmt::format(
                 "Exception occurs, when processing handler '{}', ex: {}\n",
                 type, ex.what());
           }
         });
+  }
+
+  template<typename State>
+  void HandlersProcessor<State>::useTransport(
+      std::shared_ptr<ITransport> transport) {
+    transport_ = std::move(transport);
   }
 }// namespace maelstrom::detail

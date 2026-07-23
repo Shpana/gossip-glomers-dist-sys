@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "network/transport/in_memory_transport.hpp"
+#include "detail/network/in_memory_transport.hpp"
 #include "node.hpp"
 #include "utils/unit.hpp"
 
@@ -18,7 +18,8 @@ protected:
   void SetUp() override {
     transport_ = std::make_shared<maelstrom::InMemoryTransport>();
 
-    node_ = std::make_shared<maelstrom::Node<maelstrom::Unit>>(transport_);
+    node_ = std::make_shared<maelstrom::Node<maelstrom::Unit>>();
+    node_->useTransport(transport_);
 
     assistant_ = std::thread{[this, node = node_]() {
       try {
@@ -77,7 +78,7 @@ TEST_F(InitTest, Ok) {
     ;
   }
 
-  EXPECT_TRUE(transport->hasNoResponses());
+  EXPECT_TRUE(transport->hasNoInflightResponses());
   EXPECT_FALSE(hasNotCatchedExceptions());
 }
 
@@ -101,7 +102,7 @@ TEST_F(InitTest, FailsWrongType) {
     ;
   }
 
-  EXPECT_TRUE(transport->hasNoResponses());
+  EXPECT_TRUE(transport->hasNoInflightResponses());
   EXPECT_FALSE(hasNotCatchedExceptions());
 }
 
@@ -125,6 +126,6 @@ TEST_F(InitTest, FailsWrongBody) {
     ;
   }
 
-  EXPECT_TRUE(transport->hasNoResponses());
+  EXPECT_TRUE(transport->hasNoInflightResponses());
   EXPECT_FALSE(hasNotCatchedExceptions());
 }

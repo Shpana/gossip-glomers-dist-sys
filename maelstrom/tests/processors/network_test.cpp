@@ -2,9 +2,9 @@
 
 #include <thread>
 
+#include "detail/network/in_memory_transport.hpp"
 #include "detail/processors/network.hpp"
 #include "network/messages.hpp"
-#include "network/transport/in_memory_transport.hpp"
 
 using namespace std::chrono_literals;
 
@@ -24,11 +24,10 @@ protected:
   void SetUp() override {
     transport_ = std::make_shared<maelstrom::InMemoryTransport>();
 
-    // TODO(shpana): configure frequency of repeating?
-    processor_ =
-        std::make_shared<maelstrom::detail::NetworkProcessor>(*transport_);
-
+    processor_ = std::make_shared<maelstrom::detail::NetworkProcessor>();
     transport_->start();
+
+    processor_->useTransport(transport_);
   }
 
   void TearDown() override {
@@ -82,7 +81,7 @@ TEST_F(NetworkProcessorTest, SendOnce) {
 
   processor->stop();
 
-  EXPECT_TRUE(transport->hasNoResponses());
+  EXPECT_TRUE(transport->hasNoInflightResponses());
 }
 
 TEST_F(NetworkProcessorTest, SendAtLeastOnceNoTimeout) {
@@ -295,17 +294,11 @@ TEST_F(NetworkProcessorTest, CallOnceExpiredTimeout) {
   {
     EXPECT_TRUE(f.Ready());
     auto result = std::move(f).Get();
-    EXPECT_FALSE(result);
-    auto exception = std::move(result).Error();
-
-    try {
-      std::rethrow_exception(exception);
-    } catch (maelstrom::detail::TimeoutException&) {
-      // Ok
-    } catch (...) {
-      // Wrong type
-      EXPECT_TRUE(false);
-    }
+    EXPECT_TRUE(result);
+    auto response = std::move(result).Ok();
+    EXPECT_TRUE(response.isError());
+    auto error = std::move(response).toError().value();
+    EXPECT_EQ(error.code, maelstrom::ErrorCode::Timeout);
   }
 
   processor->stop();
@@ -429,17 +422,11 @@ TEST_F(NetworkProcessorTest, CallAtLeastOnceExpiredTimeout) {
   {
     EXPECT_TRUE(f.Ready());
     auto result = std::move(f).Get();
-    EXPECT_FALSE(result);
-    auto exception = std::move(result).Error();
-
-    try {
-      std::rethrow_exception(exception);
-    } catch (maelstrom::detail::TimeoutException&) {
-      // Ok
-    } catch (...) {
-      // Wrong type
-      EXPECT_TRUE(false);
-    }
+    EXPECT_TRUE(result);
+    auto response = std::move(result).Ok();
+    EXPECT_TRUE(response.isError());
+    auto error = std::move(response).toError().value();
+    EXPECT_EQ(error.code, maelstrom::ErrorCode::Timeout);
   }
 
   processor->stop();

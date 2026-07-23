@@ -6,8 +6,8 @@
 
 #include <yaclib/async/make.hpp>
 
+#include "detail/network/in_memory_transport.hpp"
 #include "network/messages.hpp"
-#include "network/transport/in_memory_transport.hpp"
 #include "node.hpp"
 #include "routines/handler.hpp"
 #include "routines/worker.hpp"
@@ -44,9 +44,11 @@ namespace maelstrom::tests {
   public:
     static constexpr std::string_view type = "echo";
 
-    yaclib::Future<Response> handle(Network::Session&& session,
-                                    Request&& request) override {
+    yaclib::Future<Response> handle(Network::Session session,
+                                    Request request) override {
       using Clock = EchoState::Clock;
+
+      auto state = getState();
 
       auto deferred = EchoState::Deferred{
           .source = request.source,
@@ -57,8 +59,8 @@ namespace maelstrom::tests {
                   request.body["delay_ms"].get<std::chrono::milliseconds>())};
 
       {
-        std::lock_guard guard{state_->mtx};
-        state_->deferreds.push_back(std::move(deferred));
+        std::lock_guard guard{state->mtx};
+        state->deferreds.push_back(std::move(deferred));
       }
 
       return yaclib::MakeFuture(std::move(request).toResponse());
@@ -74,12 +76,14 @@ namespace maelstrom::tests {
     yaclib::Future<> process(Network::Session&& session) override {
       using Clock = EchoState::Clock;
 
+      auto state = getState();
+
       auto now = Clock::now();
 
       std::list<EchoState::Deferred> local_deferreds;
       {
-        std::lock_guard guard{state_->mtx};
-        local_deferreds = std::move(state_->deferreds);
+        std::lock_guard guard{state->mtx};
+        local_deferreds = std::move(state->deferreds);
       }
 
       for (auto& deferred: local_deferreds) {
@@ -95,10 +99,9 @@ namespace maelstrom::tests {
                     [now](const auto& elem) { return elem.deadline < now; });
 
       if (local_deferreds.size() > 0) {
-        std::lock_guard guard{state_->mtx};
-        state_->deferreds.insert(state_->deferreds.begin(),
-                                 local_deferreds.begin(),
-                                 local_deferreds.end());
+        std::lock_guard guard{state->mtx};
+        state->deferreds.insert(state->deferreds.begin(),
+                                local_deferreds.begin(), local_deferreds.end());
       }
 
       return yaclib::MakeFuture();
@@ -116,10 +119,11 @@ protected:
   void SetUp() override {
     transport_ = std::make_shared<maelstrom::InMemoryTransport>();
 
-    node_ = std::make_shared<maelstrom::Node<maelstrom::tests::EchoState>>(
-        transport_);
+    node_ = std::make_shared<maelstrom::Node<maelstrom::tests::EchoState>>();
     node_->add<maelstrom::tests::EchoHandler>();
     node_->add<maelstrom::tests::EchoWorker>(50ms);
+
+    node_->useTransport(transport_);
 
     assistant_ = std::thread{[this, node = node_]() {
       try {
@@ -154,7 +158,7 @@ protected:
       assistant_.join();
     }
 
-    EXPECT_TRUE(transport_->hasNoResponses());
+    EXPECT_TRUE(transport_->hasNoInflightResponses());
     EXPECT_FALSE(hasNotCatchedExceptions());
 
     transport_.reset();
