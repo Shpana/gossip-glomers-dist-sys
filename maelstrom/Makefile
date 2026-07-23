@@ -14,7 +14,7 @@ $(BUILD_TARGETS): build-%:
 RUN_TARGETS:=$(addprefix run-,$(TESTS))
 
 $(RUN_TARGETS): run-%: build-%
-	$(CURDIR)/$(BUILD_DIR)/maelstrom/$*
+	$(BUILD_DIR)/maelstrom/$*
 
 run-tests: $(RUN_TARGETS)
 

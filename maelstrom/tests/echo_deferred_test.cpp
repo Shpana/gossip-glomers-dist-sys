@@ -51,7 +51,7 @@ public:
                                   Request request) override {
     using Clock = EchoState::Clock;
 
-    auto state = GetState();
+    auto &state = GetState();
 
     auto deferred = EchoState::Deferred{
       .source = request.source,
@@ -61,8 +61,8 @@ public:
                     request.body["delay_ms"].get<std::chrono::milliseconds>())};
 
     {
-      std::lock_guard guard{state->mtx};
-      state->deferreds.push_back(std::move(deferred));
+      std::lock_guard guard{state.mtx};
+      state.deferreds.push_back(std::move(deferred));
     }
 
     return yaclib::MakeFuture(std::move(request).ToResponse());
@@ -78,22 +78,22 @@ public:
   yaclib::Future<> Process(Network::Session session) override {
     using Clock = EchoState::Clock;
 
-    auto state = GetState();
+    auto &state = GetState();
 
     auto now = Clock::now();
 
     std::list<EchoState::Deferred> local_deferreds;
     {
-      std::lock_guard guard{state->mtx};
-      local_deferreds = std::move(state->deferreds);
+      std::lock_guard guard{state.mtx};
+      local_deferreds = std::move(state.deferreds);
     }
 
     for (auto &deferred : local_deferreds) {
       if (deferred.deadline < now) {
         auto body = nlohmann::json({});
         body["message"] = std::move(deferred.message);
-        session.Send("echo_deferred", std::move(deferred.source),
-                     std::move(body));
+        std::ignore = session.Send("echo_deferred", std::move(deferred.source),
+                                   std::move(body));
       }
     }
 
@@ -101,9 +101,9 @@ public:
                   [now](const auto &elem) { return elem.deadline < now; });
 
     if (local_deferreds.size() > 0) {
-      std::lock_guard guard{state->mtx};
-      state->deferreds.insert(state->deferreds.begin(), local_deferreds.begin(),
-                              local_deferreds.end());
+      std::lock_guard guard{state.mtx};
+      state.deferreds.insert(state.deferreds.begin(), local_deferreds.begin(),
+                             local_deferreds.end());
     }
 
     return yaclib::MakeFuture();

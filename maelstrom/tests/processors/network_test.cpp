@@ -62,7 +62,7 @@ TEST_F(NetworkProcessorTest, SendOnce) {
                          .body = R"({"some_field_with_info": "67"})"_json,
                          .message_id = 10};
 
-    processor->Send(std::move(request));
+    std::ignore = processor->Send(std::move(request));
   }
 
   {
@@ -98,7 +98,7 @@ TEST_F(NetworkProcessorTest, SendAtLeastOnceNoTimeout) {
                          .body = R"({"some_field_with_info": "67"})"_json,
                          .message_id = 10};
 
-    processor->SendAtLeastOnce(std::move(request));
+    std::ignore = processor->SendAtLeastOnce(std::move(request));
   }
 
   {
@@ -130,7 +130,7 @@ TEST_F(NetworkProcessorTest, SendAtLeastOnceBeforeTimeout) {
                          .body = R"({"some_field_with_info": "67"})"_json,
                          .message_id = 10};
 
-    processor->SendAtLeastOnce(std::move(request), 5s);
+    std::ignore = processor->SendAtLeastOnce(std::move(request), 5s);
   }
 
   {
@@ -166,7 +166,7 @@ TEST_F(NetworkProcessorTest, SendAtLeastOnceExpiredTimeout) {
                          .body = R"({"some_field_with_info": "67"})"_json,
                          .message_id = 10};
 
-    processor->SendAtLeastOnce(std::move(request), 5s);
+    std::ignore = processor->SendAtLeastOnce(std::move(request), 5s);
   }
 
   {
@@ -432,7 +432,7 @@ TEST_F(NetworkProcessorTest, CallAtLeastOnceExpiredTimeout) {
   processor->Stop();
 }
 
-TEST_F(NetworkProcessorTest, ManeCallOnceWithTimeout) {
+TEST_F(NetworkProcessorTest, ManyCallOnceWithTimeout) {
   auto transport = GetTransport();
 
   auto processor = GetProcessor();
