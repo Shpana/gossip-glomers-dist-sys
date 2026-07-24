@@ -32,5 +32,5 @@ FetchContent_Declare(gtest
 )
 FetchContent_MakeAvailable(gtest)
 
-add_subdirectory(maelstrom)
+add_subdirectory(maelstrom-cpp)
 add_subdirectory(tasks)
